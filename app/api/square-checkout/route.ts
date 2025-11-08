@@ -13,9 +13,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the next sequential order number (starts from 27)
-    const orderNumber = await getNextOrderNumber()
-
     // Square Checkout API configuration
     // Replace these with your actual Square credentials
     const SQUARE_APPLICATION_ID = process.env.SQUARE_APPLICATION_ID
@@ -23,11 +20,32 @@ export async function POST(request: NextRequest) {
     const SQUARE_LOCATION_ID = process.env.SQUARE_LOCATION_ID
     const SQUARE_ENVIRONMENT = process.env.SQUARE_ENVIRONMENT || "sandbox" // or "production"
 
+    // Check which credentials are missing
     if (!SQUARE_APPLICATION_ID || !SQUARE_ACCESS_TOKEN || !SQUARE_LOCATION_ID) {
+      const missing = []
+      if (!SQUARE_APPLICATION_ID) missing.push("SQUARE_APPLICATION_ID")
+      if (!SQUARE_ACCESS_TOKEN) missing.push("SQUARE_ACCESS_TOKEN")
+      if (!SQUARE_LOCATION_ID) missing.push("SQUARE_LOCATION_ID")
+      
+      console.error("Missing Square credentials:", missing)
       return NextResponse.json(
-        { error: "Square credentials not configured" },
+        { 
+          error: "Square credentials not configured",
+          missing: missing,
+          message: `Please add these environment variables to Vercel: ${missing.join(", ")}`
+        },
         { status: 500 }
       )
+    }
+
+    // Get the next sequential order number (starts from 27)
+    let orderNumber: number
+    try {
+      orderNumber = await getNextOrderNumber()
+    } catch (dbError) {
+      console.error("Error getting order number:", dbError)
+      // Continue with a fallback order number
+      orderNumber = Math.floor(Date.now() / 1000) % 1000000 + 27
     }
 
     // Square API base URL
@@ -107,8 +125,16 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Checkout error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        message: errorMessage,
+        // Only include stack in development
+        ...(process.env.NODE_ENV === "development" && { stack: errorStack })
+      },
       { status: 500 }
     )
   }
