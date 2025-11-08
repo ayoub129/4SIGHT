@@ -11,19 +11,37 @@ export function BookShowcase() {
   } | null>(null)
 
   useEffect(() => {
+    // Fallback: show content after a delay if IntersectionObserver doesn't trigger
+    const fallbackTimer = setTimeout(() => {
+      setIsInView(true)
+    }, 1000)
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsInView(true)
+          clearTimeout(fallbackTimer)
         }
       },
-      { threshold: 0.3 },
+      { 
+        threshold: 0.1, // Lower threshold for mobile
+        rootMargin: '50px', // Trigger earlier
+      },
     )
 
     const element = document.querySelector("[data-book-showcase]")
-    if (element) observer.observe(element)
+    if (element) {
+      observer.observe(element)
+    } else {
+      // If element not found, show content anyway
+      clearTimeout(fallbackTimer)
+      setIsInView(true)
+    }
 
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      clearTimeout(fallbackTimer)
+    }
   }, [])
 
   const handleCoverClick = (src: string, alt: string, title: string) => {

@@ -4,6 +4,16 @@ import { useEffect, useState } from "react"
 
 export function CameraFlash() {
   const [stage, setStage] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     const timings = [
@@ -41,7 +51,7 @@ export function CameraFlash() {
             height: "240px",
             left: "-120px",
             top: "-120px",
-            transform: `scale(${stage >= 1 ? 3 : 0.03})`,
+            transform: `scale(${stage >= 1 ? (isMobile ? 1.5 : 3) : 0.03})`,
             opacity: stage >= 1 && stage <= 2 ? 1 : 0,
           }}
         >
