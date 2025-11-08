@@ -23,17 +23,17 @@ export function CameraFlash() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden">
-      {/* STAGE 1-2: Professional Camera Lens with Flash */}
+      {/* STAGE 1-2: Camera Lens with Flash - using SVG */}
       <div 
         className="relative" 
         style={{ 
           perspective: "1000px",
-          transform: stage >= 3 ? "scale(0.15) translateY(350px) translateX(0px)" : "scale(1)",
+          transform: stage >= 3 ? "scale(0.02) translateY(350px) translateX(0px)" : "scale(1)",
           transition: stage === 3 ? "all 1.4s cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
           opacity: stage >= 4 ? 0 : 1,
         }}
       >
-        {/* Outer lens barrel with metallic gradient */}
+        {/* Camera SVG */}
         <div
           className="absolute transition-all duration-700 ease-out"
           style={{
@@ -41,70 +41,32 @@ export function CameraFlash() {
             height: "240px",
             left: "-120px",
             top: "-120px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle at 30% 30%, #e8e8e8, #707070 50%, #1a1a1a)",
-            boxShadow:
-              "0 0 0 8px #2a2a2a, 0 0 0 16px #1a1a1a, inset -2px -2px 8px rgba(0,0,0,0.5), inset 2px 2px 8px rgba(255,255,255,0.2)",
-            transform: `scale(${stage >= 1 ? 1 : 0.3})`,
+            transform: `scale(${stage >= 1 ? 3 : 0.03})`,
             opacity: stage >= 1 && stage <= 2 ? 1 : 0,
           }}
         >
-          {/* Glass elements */}
-          <div
-            className="absolute inset-3 rounded-full"
+          <img
+            src="/cards-cover/camera drawing.svg"
+            alt="Camera"
+            className="w-full h-full object-contain"
             style={{
-              background:
-                "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.6), rgba(100,150,200,0.3) 40%, transparent 70%)",
-              boxShadow: "inset 0 0 30px rgba(255,255,255,0.4)",
+              filter: "drop-shadow(0 0 20px rgba(255,255,255,0.3))",
             }}
           />
+        </div>
 
-          {/* Iris/Aperture diaphragm */}
-          <div
-            className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              width: "160px",
-              height: "160px",
-              border: "3px solid #4a4a4a",
-              background: "radial-gradient(circle, #2a2a2a 0%, #0a0a0a 70%)",
-              boxShadow: "inset 0 0 20px rgba(0,0,0,0.9), 0 0 10px rgba(100,150,200,0.3)",
-            }}
-          >
+        {/* Flash burst - closer to camera lens */}
+        {stage === 2 && (
+          <>
             <div
               className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
                 width: "120px",
                 height: "120px",
                 background:
-                  "radial-gradient(circle at 30% 30%, rgba(200,220,255,0.4) 0%, rgba(150,180,220,0.2) 30%, transparent 60%)",
-              }}
-            />
-          </div>
-
-          {/* Focus ring */}
-          <div
-            className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              width: "200px",
-              height: "200px",
-              border: "2px solid #5a5a5a",
-              opacity: 0.6,
-            }}
-          />
-        </div>
-
-        {/* Flash burst */}
-        {stage === 2 && (
-          <>
-            <div
-              className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
-              style={{
-                width: "240px",
-                height: "240px",
-                background:
-                  "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.7) 20%, rgba(200,220,255,0.3) 50%, transparent 80%)",
+                  "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 15%, rgba(200,220,255,0.4) 40%, transparent 70%)",
                 boxShadow:
-                  "0 0 150px rgba(255,255,255,1), 0 0 300px rgba(200,220,255,0.8), inset 0 0 100px rgba(255,255,255,0.9)",
+                  "0 0 80px rgba(255,255,255,1), 0 0 150px rgba(200,220,255,0.9), inset 0 0 50px rgba(255,255,255,0.95)",
                 animation: "flashExplosion 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
               }}
             />
@@ -112,10 +74,10 @@ export function CameraFlash() {
             <div
               className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
-                width: "240px",
-                height: "240px",
-                background: "radial-gradient(circle, rgba(255,255,255,0.6) 0%, transparent 60%)",
-                filter: "blur(30px)",
+                width: "100px",
+                height: "100px",
+                background: "radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 50%)",
+                filter: "blur(20px)",
                 animation: "flashGlow 0.8s ease-out forwards",
               }}
             />
@@ -297,23 +259,16 @@ export function CameraFlash() {
                 <ellipse cx="152" cy="165" rx="7" ry="9" fill="#D4A574" />
               </g>
 
-              {/* Camera in hands - positioned naturally */}
+              {/* Camera in hands - using camera drawing SVG */}
               <g id="camera" style={{ transform: "translateX(-10px) translateY(10px)" }}>
-                {/* Camera body - compact, realistic size */}
-                <rect x="50" y="145" width="50" height="35" rx="4" fill="#1A1A1A" stroke="#2A2A2A" strokeWidth="2" />
-
-                {/* Main lens barrel */}
-                <circle cx="75" cy="162" r="18" fill="#2A2A2A" stroke="#1A1A1A" strokeWidth="2" />
-
-                {/* Lens glass */}
-                <circle cx="75" cy="162" r="15" fill="url(#lensGradient)" opacity="0.9" />
-
-                {/* Inner aperture */}
-                <circle cx="75" cy="162" r="10" fill="#0A0A0A" />
-                <circle cx="75" cy="162" r="7" fill="#1a4a6a" opacity="0.6" />
-
-                {/* Top plate */}
-                <rect x="52" y="147" width="46" height="6" rx="2" fill="#0A0A0A" />
+                <image
+                  href="/cards-cover/camera drawing.svg"
+                  x="50"
+                  y="145"
+                  width="50"
+                  height="35"
+                  preserveAspectRatio="xMidYMid meet"
+                />
               </g>
 
               {/* Neck connection */}

@@ -6,8 +6,8 @@ import { FallingCards } from "@/components/falling-cards"
 import { HeroSection } from "@/components/hero-section"
 import { BookShowcase } from "@/components/book-showcase"
 import { StorySection } from "@/components/story-section"
-import { CTASection } from "@/components/cta-section"
 import { Footer } from "@/components/footer"
+import { RandomCardDrop } from "@/components/random-card-drop"
 
 export default function Home() {
   const [showContent, setShowContent] = useState(false)
@@ -25,6 +25,9 @@ export default function Home() {
       {/* Falling cards background */}
       <FallingCards />
 
+      {/* Random card drops (10% chance) */}
+      <RandomCardDrop />
+
       {/* Camera flash animation - only show until content appears */}
       {!showContent && <CameraFlash />}
 
@@ -35,7 +38,6 @@ export default function Home() {
         <HeroSection />
         <BookShowcase />
         <StorySection />
-        <CTASection />
         <Footer />
       </div>
     </main>

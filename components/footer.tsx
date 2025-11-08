@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="relative border-t border-foreground/10 py-16 px-4 bg-card/50">
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 mb-12">
           {/* Left side - Branding */}
           <div>
             <h3 className="text-3xl font-black tracking-tight mb-4">4SIGHT</h3>
@@ -14,7 +14,7 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Right side - Key info */}
+          {/* Middle - Key info */}
           <div className="space-y-4">
             <div>
               <h4 className="text-sm font-semibold tracking-widest mb-2 uppercase opacity-75">Author</h4>
@@ -22,7 +22,38 @@ export function Footer() {
             </div>
             <div>
               <h4 className="text-sm font-semibold tracking-widest mb-2 uppercase opacity-75">Format</h4>
-              <p className="text-lg font-light">Illustrated Hardcover</p>
+              <p className="text-lg font-light">Ebook or Paper Book</p>
+            </div>
+          </div>
+
+          {/* Right side - Follow Us */}
+          <div>
+            <h4 className="text-sm font-semibold tracking-widest mb-4 uppercase opacity-75">Follow Us</h4>
+            <div className="space-y-3">
+              <a
+                href="https://instagram.com/omarmhammouda"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-lg font-light hover:text-red-600 transition-colors cursor-pointer"
+              >
+                @omarmhammouda
+              </a>
+              <a
+                href="https://instagram.com/fore4sight"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-lg font-light hover:text-red-600 transition-colors cursor-pointer"
+              >
+                @fore4sight
+              </a>
+              <a
+                href="https://instagram.com/ace.d.strider"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-lg font-light hover:text-red-600 transition-colors cursor-pointer"
+              >
+                @ace.d.strider
+              </a>
             </div>
           </div>
         </div>
