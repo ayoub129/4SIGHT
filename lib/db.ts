@@ -1,4 +1,10 @@
-import { sql } from "@vercel/postgres"
+import { Pool } from "pg"
+
+// Create a connection pool
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+})
 
 export interface Order {
   id: number
@@ -16,7 +22,7 @@ export interface Order {
 export async function initializeDatabase() {
   try {
     // Create orders table
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
         order_number INTEGER NOT NULL UNIQUE,
@@ -28,30 +34,45 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         status TEXT DEFAULT 'pending'
       )
-    `
+    `)
 
     // Create admin_users table
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS admin_users (
         id SERIAL PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `
+    `)
+
+    // Create order_counter table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS order_counter (
+        id INTEGER PRIMARY KEY,
+        current_number INTEGER NOT NULL DEFAULT 26
+      )
+    `)
 
     // Insert default admin if not exists
-    const adminCheck = await sql`
-      SELECT id FROM admin_users WHERE email = 'admin.4sight@gmail.com'
-    `
+    const adminCheck = await pool.query(
+      "SELECT id FROM admin_users WHERE email = $1",
+      ["admin.4sight@gmail.com"]
+    )
 
     if (adminCheck.rows.length === 0) {
       // Simple password hash (in production, use bcrypt)
       const passwordHash = "4sightadmin123" // In production, hash this properly
-      await sql`
-        INSERT INTO admin_users (email, password_hash)
-        VALUES ('admin.4sight@gmail.com', ${passwordHash})
-      `
+      await pool.query(
+        "INSERT INTO admin_users (email, password_hash) VALUES ($1, $2)",
+        ["admin.4sight@gmail.com", passwordHash]
+      )
+    }
+
+    // Initialize order counter if not exists
+    const counterCheck = await pool.query("SELECT current_number FROM order_counter WHERE id = 1")
+    if (counterCheck.rows.length === 0) {
+      await pool.query("INSERT INTO order_counter (id, current_number) VALUES (1, 26)")
     }
   } catch (error) {
     console.error("Error initializing database:", error)
@@ -75,11 +96,19 @@ export async function saveOrder(order: {
   squareCheckoutId?: string
 }) {
   try {
-    const result = await sql`
-      INSERT INTO orders (order_number, email, format, price, product_name, square_checkout_id, status)
-      VALUES (${order.orderNumber}, ${order.email}, ${order.format}, ${order.price}, ${order.productName}, ${order.squareCheckoutId || null}, 'pending')
-      RETURNING id
-    `
+    const result = await pool.query(
+      `INSERT INTO orders (order_number, email, format, price, product_name, square_checkout_id, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+       RETURNING id`,
+      [
+        order.orderNumber,
+        order.email,
+        order.format,
+        order.price,
+        order.productName,
+        order.squareCheckoutId || null,
+      ]
+    )
     return { lastInsertRowid: result.rows[0]?.id }
   } catch (error) {
     console.error("Error saving order:", error)
@@ -89,9 +118,7 @@ export async function saveOrder(order: {
 
 export async function getAllOrders(): Promise<Order[]> {
   try {
-    const result = await sql`
-      SELECT * FROM orders ORDER BY created_at DESC
-    `
+    const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC")
     return result.rows as Order[]
   } catch (error) {
     console.error("Error fetching orders:", error)
@@ -101,16 +128,16 @@ export async function getAllOrders(): Promise<Order[]> {
 
 export async function verifyAdmin(email: string, password: string): Promise<boolean> {
   try {
-    const result = await sql`
-      SELECT password_hash FROM admin_users WHERE email = ${email}
-    `
+    const result = await pool.query("SELECT password_hash FROM admin_users WHERE email = $1", [
+      email,
+    ])
 
     if (result.rows.length === 0) {
       return false
     }
 
     const admin = result.rows[0] as { password_hash: string }
-    
+
     // Simple password check (in production, use bcrypt)
     return admin.password_hash === password
   } catch (error) {

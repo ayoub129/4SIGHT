@@ -1,26 +1,27 @@
-import { sql } from "@vercel/postgres"
+import { Pool } from "pg"
+
+// Create a connection pool
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+})
 
 // Initialize order number counter in database
 async function initializeOrderNumber() {
   try {
     // Create order_counter table if it doesn't exist
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS order_counter (
         id INTEGER PRIMARY KEY,
         current_number INTEGER NOT NULL DEFAULT 26
       )
-    `
+    `)
 
     // Insert initial value if not exists
-    const check = await sql`
-      SELECT current_number FROM order_counter WHERE id = 1
-    `
+    const check = await pool.query("SELECT current_number FROM order_counter WHERE id = 1")
 
     if (check.rows.length === 0) {
-      await sql`
-        INSERT INTO order_counter (id, current_number)
-        VALUES (1, 26)
-      `
+      await pool.query("INSERT INTO order_counter (id, current_number) VALUES (1, 26)")
     }
   } catch (error) {
     console.error("Error initializing order counter:", error)
@@ -40,19 +41,16 @@ export async function getNextOrderNumber(): Promise<number> {
     await initializeOrderNumber()
 
     // Get current number and increment
-    const result = await sql`
-      UPDATE order_counter
-      SET current_number = current_number + 1
-      WHERE id = 1
-      RETURNING current_number
-    `
+    const result = await pool.query(
+      `UPDATE order_counter
+       SET current_number = current_number + 1
+       WHERE id = 1
+       RETURNING current_number`
+    )
 
     if (result.rows.length === 0) {
       // If no row exists, create it and return 27
-      await sql`
-        INSERT INTO order_counter (id, current_number)
-        VALUES (1, 27)
-      `
+      await pool.query("INSERT INTO order_counter (id, current_number) VALUES (1, 27)")
       return 27
     }
 

@@ -1,68 +1,88 @@
-# Vercel Postgres Setup Guide
+# Database Setup Guide for Vercel
 
-This project uses **Vercel Postgres** instead of SQLite, which is required for Vercel hosting.
+This project uses **Postgres** which works with any Postgres provider available in Vercel's Marketplace.
+
+## Available Database Options
+
+You can choose any of these Postgres providers from Vercel's Marketplace:
+
+1. **Neon** - Serverless Postgres (Recommended)
+2. **Supabase** - Postgres backend
+3. **Prisma Postgres** - Instant Serverless Postgres
+4. **Nile** - Postgres re-engineered for B2B
 
 ## Setup Steps
 
-### 1. Create Vercel Postgres Database
+### Option 1: Using Neon (Recommended)
 
 1. Go to your Vercel dashboard: https://vercel.com/dashboard
-2. Select your project (or create a new one)
+2. Select your project
 3. Go to the **Storage** tab
-4. Click **Create Database**
-5. Select **Postgres**
-6. Choose a name for your database (e.g., "4sight-db")
-7. Select a region closest to your users
-8. Click **Create**
+4. Click **Create Database** or **Browse Marketplace**
+5. Select **Neon** (Serverless Postgres)
+6. Follow the setup wizard
+7. The connection string will be automatically added to your environment variables
 
-### 2. Get Connection String
+### Option 2: Using Supabase
 
-After creating the database:
+1. Go to your Vercel dashboard
+2. Select your project
+3. Go to the **Storage** tab
+4. Click **Browse Marketplace**
+5. Select **Supabase**
+6. Connect your Supabase account or create a new project
+7. The connection string will be automatically added
 
-1. Go to the **Storage** tab in your Vercel project
-2. Click on your Postgres database
-3. Go to the **.env.local** tab
-4. Copy the `POSTGRES_URL` connection string
+### Option 3: Using Prisma Postgres
 
-### 3. Add Environment Variables
+1. Go to your Vercel dashboard
+2. Select your project
+3. Go to the **Storage** tab
+4. Click **Browse Marketplace**
+5. Select **Prisma Postgres**
+6. Follow the setup wizard
+7. The connection string will be automatically added
 
-Add these to your Vercel project environment variables:
+## Environment Variables
 
-1. Go to your project **Settings** → **Environment Variables**
-2. Add the following variables:
+After connecting a database, Vercel will automatically add these environment variables:
 
-```
-POSTGRES_URL=your_postgres_url_here
-POSTGRES_PRISMA_URL=your_prisma_url_here (if available)
-POSTGRES_URL_NON_POOLING=your_non_pooling_url_here (if available)
-```
+- `POSTGRES_URL` - Main connection string
+- `DATABASE_URL` - Alternative connection string (some providers use this)
 
-**OR** if you're using `.env.local` locally, add:
+**OR** if you're setting up manually, add to your `.env.local`:
 
 ```env
-POSTGRES_URL=your_postgres_url_here
+POSTGRES_URL=your_postgres_connection_string_here
+# OR
+DATABASE_URL=your_postgres_connection_string_here
 ```
 
-### 4. Deploy
+## Database Initialization
 
-The database tables will be created automatically on first use. The `@vercel/postgres` package automatically uses the `POSTGRES_URL` environment variable.
+The database tables will be created automatically on first use:
+- `orders` - Stores all order information
+- `admin_users` - Stores admin login credentials
+- `order_counter` - Tracks sequential order numbers
 
 ## Admin Credentials
 
 - **Email**: `admin.4sight@gmail.com`
 - **Password**: `4sightadmin123`
 
+The admin user is created automatically on first database initialization.
+
 ## Local Development
 
-For local development, you can:
+For local development:
 
-1. Use the same Vercel Postgres database (recommended)
-2. Or use a local Postgres instance and set `POSTGRES_URL` in your `.env.local`
+1. Use the same database connection string from your Vercel project
+2. Or set up a local Postgres instance and use its connection string
+3. Add the connection string to your `.env.local` file
 
 ## Notes
 
-- The database will be automatically initialized on first API call
-- All tables are created automatically
-- The admin user is created automatically on first initialization
+- All database providers work the same way - just use the connection string they provide
+- The code automatically handles SSL connections in production
 - Order numbers start from 27 and increment sequentially
-
+- Tables are created automatically on first API call
