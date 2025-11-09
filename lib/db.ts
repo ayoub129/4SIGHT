@@ -145,6 +145,30 @@ export async function getAllOrders(): Promise<Order[]> {
   }
 }
 
+export interface OrderWithNewsletter extends Order {
+  is_newsletter_subscriber: boolean
+  newsletter_subscribed_at: string | null
+}
+
+export async function getAllOrdersWithNewsletter(): Promise<OrderWithNewsletter[]> {
+  try {
+    // Join orders with newsletter subscribers to show combined data
+    const result = await pool.query(`
+      SELECT 
+        o.*,
+        CASE WHEN ns.email IS NOT NULL THEN true ELSE false END as is_newsletter_subscriber,
+        ns.created_at as newsletter_subscribed_at
+      FROM orders o
+      LEFT JOIN newsletter_subscribers ns ON LOWER(o.email) = LOWER(ns.email) AND ns.subscribed = true
+      ORDER BY o.created_at DESC
+    `)
+    return result.rows as OrderWithNewsletter[]
+  } catch (error) {
+    console.error("Error fetching orders with newsletter:", error)
+    throw error
+  }
+}
+
 export async function verifyAdmin(email: string, password: string): Promise<boolean> {
   try {
     const result = await pool.query("SELECT password_hash FROM admin_users WHERE email = $1", [

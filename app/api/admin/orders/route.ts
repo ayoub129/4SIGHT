@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAllOrders } from "@/lib/db"
+import { getAllOrdersWithNewsletter } from "@/lib/db"
 
 function verifySession(request: NextRequest): boolean {
   const sessionToken = request.cookies.get("admin_session")?.value
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const orders = await getAllOrders()
+    const orders = await getAllOrdersWithNewsletter()
     return NextResponse.json({ orders })
   } catch (error) {
     console.error("Error fetching orders:", error)

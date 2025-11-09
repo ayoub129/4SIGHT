@@ -6,13 +6,15 @@ import { useRouter } from "next/navigation"
 interface Order {
   id: number
   order_number: number
-  email: string
+  email: string | null
   format: string
   price: string
   product_name: string
   square_checkout_id: string | null
   created_at: string
   status: string
+  is_newsletter_subscriber?: boolean
+  newsletter_subscribed_at?: string | null
 }
 
 export default function AdminDashboardPage() {
@@ -103,7 +105,7 @@ export default function AdminDashboardPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Order #</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Email / Newsletter</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Format</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Price</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
@@ -114,7 +116,18 @@ export default function AdminDashboardPage() {
                   {orders.map((order) => (
                     <tr key={order.id} className="border-t border-foreground/10 hover:bg-muted/30">
                       <td className="px-6 py-4 font-semibold">#{order.order_number}</td>
-                      <td className="px-6 py-4">{order.email}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className={order.email ? "" : "text-muted-foreground italic"}>
+                            {order.email || "No email yet"}
+                          </span>
+                          {order.is_newsletter_subscriber && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 inline-block w-fit">
+                              ✓ Newsletter Subscriber
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 capitalize">{order.format}</td>
                       <td className="px-6 py-4">${order.price}</td>
                       <td className="px-6 py-4">
