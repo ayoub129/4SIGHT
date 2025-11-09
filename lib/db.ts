@@ -63,6 +63,16 @@ export async function initializeDatabase() {
       )
     `)
 
+    // Create newsletter_subscribers table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        subscribed BOOLEAN DEFAULT TRUE
+      )
+    `)
+
     // Insert default admin if not exists
     const adminCheck = await pool.query(
       "SELECT id FROM admin_users WHERE email = $1",
@@ -152,5 +162,60 @@ export async function verifyAdmin(email: string, password: string): Promise<bool
   } catch (error) {
     console.error("Error verifying admin:", error)
     return false
+  }
+}
+
+export async function subscribeToNewsletter(email: string): Promise<{ success: boolean; message: string }> {
+  try {
+    // Check if email already exists
+    const existing = await pool.query(
+      "SELECT id FROM newsletter_subscribers WHERE email = $1",
+      [email]
+    )
+
+    if (existing.rows.length > 0) {
+      // Update subscription status if unsubscribed
+      await pool.query(
+        "UPDATE newsletter_subscribers SET subscribed = TRUE WHERE email = $1",
+        [email]
+      )
+      return { success: true, message: "Email already subscribed" }
+    }
+
+    // Insert new subscriber
+    await pool.query(
+      "INSERT INTO newsletter_subscribers (email, subscribed) VALUES ($1, TRUE)",
+      [email]
+    )
+    return { success: true, message: "Successfully subscribed" }
+  } catch (error) {
+    console.error("Error subscribing to newsletter:", error)
+    throw error
+  }
+}
+
+export async function getAllNewsletterSubscribers(): Promise<{ id: number; email: string; created_at: string; subscribed: boolean }[]> {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM newsletter_subscribers WHERE subscribed = TRUE ORDER BY created_at DESC"
+    )
+    return result.rows
+  } catch (error) {
+    console.error("Error fetching newsletter subscribers:", error)
+    throw error
+  }
+}
+
+export async function updateOrderWithCustomerEmail(squareCheckoutId: string, email: string): Promise<void> {
+  try {
+    await pool.query(
+      `UPDATE orders 
+       SET email = $1, status = 'completed' 
+       WHERE square_checkout_id = $2`,
+      [email, squareCheckoutId]
+    )
+  } catch (error) {
+    console.error("Error updating order with customer email:", error)
+    throw error
   }
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 
 export function HeroSection() {
   const [isVisible, setIsVisible] = useState(false)
+  const [newsletterEmail, setNewsletterEmail] = useState("")
+  const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
 
   useEffect(() => {
     setIsVisible(true)
@@ -13,6 +15,41 @@ export function HeroSection() {
     const price = format === "ebook" ? "4.99" : "14.99"
     // Redirect immediately to checkout page
     window.location.href = `/checkout?format=${format}&price=${price}`
+  }
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!newsletterEmail) {
+      return
+    }
+
+    setNewsletterStatus("loading")
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: newsletterEmail }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to subscribe")
+      }
+
+      setNewsletterStatus("success")
+      setNewsletterEmail("")
+      
+      // Reset success message after 3 seconds
+      setTimeout(() => setNewsletterStatus("idle"), 3000)
+    } catch (error) {
+      setNewsletterStatus("error")
+      setTimeout(() => setNewsletterStatus("idle"), 3000)
+    }
   }
 
   return (
@@ -112,9 +149,44 @@ export function HeroSection() {
               </button>
             </div>
 
-            <p className="text-sm text-muted-foreground text-center leading-relaxed">
-              Click a format above to proceed to checkout. Email is optional and can be added separately.
-            </p>
+            {/* Newsletter Signup - Separate from purchase */}
+            <div className="mt-8">
+              <form onSubmit={handleNewsletterSubmit} className="flex flex-col items-center gap-4 max-w-md mx-auto">
+                <div className="w-full">
+                  <input
+                    type="email"
+                    placeholder="Stay updated - Enter your email for newsletter"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    className="w-full px-5 py-4 text-base border-2 border-foreground/20 rounded-xl bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-red-600 focus:ring-4 focus:ring-red-600/20 transition-all"
+                    disabled={newsletterStatus === "loading"}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!newsletterEmail || newsletterStatus === "loading"}
+                  className="w-full px-8 py-4 border-2 border-foreground/20 rounded-xl hover:border-foreground/40 bg-background/50 hover:bg-foreground/5 font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {newsletterStatus === "loading" 
+                    ? "Subscribing..." 
+                    : newsletterStatus === "success" 
+                    ? "✓ Subscribed!" 
+                    : newsletterStatus === "error"
+                    ? "Try Again"
+                    : "Subscribe to Newsletter"}
+                </button>
+                {newsletterStatus === "success" && (
+                  <p className="text-sm text-green-600 text-center">
+                    Thank you! You've been added to our newsletter.
+                  </p>
+                )}
+                {newsletterStatus === "error" && (
+                  <p className="text-sm text-red-600 text-center">
+                    Something went wrong. Please try again.
+                  </p>
+                )}
+              </form>
+            </div>
           </div>
 
         </div>

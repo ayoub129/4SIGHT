@@ -8,7 +8,6 @@ function CheckoutContent() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [email, setEmail] = useState("")
   
   const format = searchParams.get("format") as "ebook" | "paperback" | null
   const price = searchParams.get("price") || "0"
@@ -22,9 +21,7 @@ function CheckoutContent() {
     }
   }, [format, price, router])
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleCheckout = async () => {
     if (!format || !price) {
       setError("Missing product information")
       return
@@ -34,7 +31,7 @@ function CheckoutContent() {
     setError(null)
 
     try {
-      // Call Square Checkout API (email is optional)
+      // Call Square Checkout API
       const response = await fetch("/api/square-checkout", {
         method: "POST",
         headers: {
@@ -44,7 +41,6 @@ function CheckoutContent() {
           format,
           price,
           productName,
-          email: email || undefined, // Email is optional
         }),
       })
 
@@ -103,41 +99,25 @@ function CheckoutContent() {
           </div>
         </div>
 
-        {/* Email Input */}
-        <form onSubmit={handleCheckout} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2">
-              Email Address <span className="text-muted-foreground text-xs">(Optional)</span>
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="your.email@example.com (optional)"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-5 py-4 text-base border-2 border-foreground/20 rounded-xl bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-red-600 focus:ring-4 focus:ring-red-600/20 transition-all"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              We'll send your order confirmation to this email. You can add it later if you prefer.
-            </p>
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-950/20 border-2 border-red-600 rounded-xl p-4">
+            <p className="text-red-600 text-sm">{error}</p>
           </div>
+        )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 dark:bg-red-950/20 border-2 border-red-600 rounded-xl p-4">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Checkout Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full px-8 py-4 bg-foreground text-background font-semibold text-lg rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-lg"
-          >
-            {isLoading ? "Processing..." : "Proceed to Payment"}
-          </button>
-        </form>
+        {/* Checkout Button */}
+        <button
+          onClick={handleCheckout}
+          disabled={isLoading}
+          className="w-full px-8 py-4 bg-foreground text-background font-semibold text-lg rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-lg"
+        >
+          {isLoading ? "Processing..." : "Proceed to Payment"}
+        </button>
+        
+        <p className="text-xs text-muted-foreground text-center mt-4">
+          Customer information will be collected securely through Square checkout
+        </p>
 
         {/* Back Button */}
         <button

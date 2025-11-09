@@ -4,7 +4,7 @@ import { getNextOrderNumber } from "@/lib/order-number"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { format, price, productName, email } = body
+    const { format, price, productName } = body
 
     if (!format || !price || !productName) {
       return NextResponse.json(
@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    // Email is optional
 
     // Square Checkout API configuration
     // Replace these with your actual Square credentials
@@ -102,12 +101,12 @@ export async function POST(request: NextRequest) {
 
     const checkoutId = data.payment_link?.id
 
-    // Save order to database (email is optional)
+    // Save order to database (email will be captured from Square webhook)
     try {
       const { saveOrder } = await import("@/lib/db")
       await saveOrder({
         orderNumber,
-        email: email || null,
+        email: null, // Will be updated from Square webhook
         format,
         price,
         productName,
