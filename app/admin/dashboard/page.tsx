@@ -22,7 +22,6 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
-  const [isClearing, setIsClearing] = useState(false)
 
   useEffect(() => {
     fetchOrders()
@@ -54,33 +53,6 @@ export default function AdminDashboardPage() {
     router.push("/admin/login")
   }
 
-  const handleClearData = async () => {
-    if (!confirm("Are you sure you want to clear all orders? This cannot be undone.")) {
-      return
-    }
-
-    setIsClearing(true)
-    try {
-      const response = await fetch("/api/admin/clear-data", {
-        method: "POST",
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to clear data")
-      }
-
-      // Refresh orders list
-      await fetchOrders()
-      alert("All orders cleared successfully!")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to clear data")
-    } finally {
-      setIsClearing(false)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -103,21 +75,12 @@ export default function AdminDashboardPage() {
             </h1>
             <p className="text-muted-foreground">Admin Dashboard</p>
           </div>
-          <div className="flex gap-4">
-            <button
-              onClick={handleClearData}
-              disabled={isClearing}
-              className="px-6 py-3 border-2 border-red-600/20 rounded-xl hover:border-red-600/40 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed text-red-600"
-            >
-              {isClearing ? "Clearing..." : "Clear All Data"}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-6 py-3 border-2 border-foreground/20 rounded-xl hover:border-foreground/40 cursor-pointer transition-all"
-            >
-              Logout
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="px-6 py-3 border-2 border-foreground/20 rounded-xl hover:border-foreground/40 cursor-pointer transition-all"
+          >
+            Logout
+          </button>
         </div>
 
         {error && (
