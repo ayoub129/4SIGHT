@@ -6,12 +6,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { format, price, productName, email } = body
 
-    if (!format || !price || !productName || !email) {
+    if (!format || !price || !productName) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       )
     }
+    // Email is optional
 
     // Square Checkout API configuration
     // Replace these with your actual Square credentials
@@ -101,12 +102,12 @@ export async function POST(request: NextRequest) {
 
     const checkoutId = data.payment_link?.id
 
-    // Save order to database
+    // Save order to database (email is optional)
     try {
       const { saveOrder } = await import("@/lib/db")
       await saveOrder({
         orderNumber,
-        email,
+        email: email || null,
         format,
         price,
         productName,

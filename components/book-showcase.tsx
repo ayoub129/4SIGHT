@@ -96,7 +96,76 @@ export function BookShowcase() {
 
           {/* Cover Variants Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 lg:gap-8 w-full max-w-6xl">
-            {/* Red Edition */}
+            {/* White Edition - Common (First) */}
+            <div className="flex flex-col items-center group relative">
+              {/* Pre-order Badge */}
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                <div className="bg-foreground text-background px-4 py-1 rounded-full text-xs font-bold tracking-wider shadow-lg border-2 border-white/20">
+                  PRE-ORDER GUARANTEED
+                </div>
+              </div>
+              
+              {/* Edition Card Container */}
+              <div className="relative w-full bg-gradient-to-br from-foreground/5 to-foreground/10 dark:from-foreground/10 dark:to-foreground/5 rounded-2xl p-6 border-2 border-foreground/20 group-hover:border-foreground/40 transition-all duration-500">
+                <div className="relative mb-6">
+                  <div
+                    className="relative w-full max-w-[200px] mx-auto aspect-[3/4] transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2"
+                    style={{
+                      transformStyle: "preserve-3d",
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-foreground/10 to-transparent rounded-lg blur-xl group-hover:blur-2xl transition-all duration-500" />
+                    <img
+                      src="/cards-cover/cover1000.png"
+                      alt="White Edition Cover"
+                      onClick={() => handleCoverClick("/cards-cover/cover1000.png", "White Edition Cover", "White Edition")}
+                      className="relative w-full h-full object-contain rounded-lg shadow-2xl border-2 border-foreground/30 bg-background/80 cursor-pointer transition-all duration-300 hover:scale-105"
+                      style={{
+                        boxShadow: "0 30px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <div className="text-center mb-6">
+                  <h4 className="text-2xl md:text-3xl font-black mb-3" style={{ fontFamily: "var(--font-bebas-neue), sans-serif" }}>
+                    White Edition
+                  </h4>
+                  <div className="inline-flex items-center gap-2 bg-foreground/10 dark:bg-foreground/20 px-3 py-1 rounded-full mb-3">
+                    <span className="text-2xl font-black">1,000</span>
+                    <span className="text-sm font-semibold text-muted-foreground">copies total</span>
+                  </div>
+                  <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                    <p className="font-semibold text-foreground">First 100 pre-orders guaranteed</p>
+                    <p>Then 900 copies available</p>
+                  </div>
+                </div>
+
+                {/* Included Cards - Fan Layout */}
+                <div className="relative mb-6 flex justify-center items-center h-32">
+                  <div className="relative w-24 h-32 transition-all duration-300 hover:scale-110 hover:z-10 hover:rotate-6" style={{ transform: "rotate(-8deg)" }}>
+                    <img
+                      src="/cards-cover/Front1000.png"
+                      alt="White Front Card"
+                      className="w-full h-full object-cover rounded-sm shadow-xl border-2 border-foreground/20"
+                    />
+                  </div>
+                  <div className="relative w-24 h-32 -ml-4 transition-all duration-300 hover:scale-110 hover:z-10 hover:-rotate-6" style={{ transform: "rotate(8deg)" }}>
+                    <img
+                      src="/cards-cover/Back1000.png"
+                      alt="White Back Card"
+                      className="w-full h-full object-cover rounded-sm shadow-xl border-2 border-foreground/20"
+                    />
+                  </div>
+                </div>
+                
+                <p className="text-xs text-center text-muted-foreground leading-relaxed">
+                  Includes matching white playing cards with every book
+                </p>
+              </div>
+            </div>
+
+            {/* Red Edition - Ultra Rare */}
             <div className="flex flex-col items-center group relative">
               {/* Rarity Badge */}
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
@@ -232,74 +301,6 @@ export function BookShowcase() {
               </div>
             </div>
 
-            {/* White Edition */}
-            <div className="flex flex-col items-center group relative">
-              {/* Pre-order Badge */}
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                <div className="bg-foreground text-background px-4 py-1 rounded-full text-xs font-bold tracking-wider shadow-lg border-2 border-white/20">
-                  PRE-ORDER GUARANTEED
-                </div>
-              </div>
-              
-              {/* Edition Card Container */}
-              <div className="relative w-full bg-gradient-to-br from-foreground/5 to-foreground/10 dark:from-foreground/10 dark:to-foreground/5 rounded-2xl p-6 border-2 border-foreground/20 group-hover:border-foreground/40 transition-all duration-500">
-                <div className="relative mb-6">
-                  <div
-                    className="relative w-full max-w-[200px] mx-auto aspect-[3/4] transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2"
-                    style={{
-                      transformStyle: "preserve-3d",
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-foreground/10 to-transparent rounded-lg blur-xl group-hover:blur-2xl transition-all duration-500" />
-                    <img
-                      src="/cards-cover/cover1000.png"
-                      alt="White Edition Cover"
-                      onClick={() => handleCoverClick("/cards-cover/cover1000.png", "White Edition Cover", "White Edition")}
-                      className="relative w-full h-full object-contain rounded-lg shadow-2xl border-2 border-foreground/30 bg-background/80 cursor-pointer transition-all duration-300 hover:scale-105"
-                      style={{
-                        boxShadow: "0 30px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                  </div>
-                </div>
-                
-                <div className="text-center mb-6">
-                  <h4 className="text-2xl md:text-3xl font-black mb-3" style={{ fontFamily: "var(--font-bebas-neue), sans-serif" }}>
-                    White Edition
-                  </h4>
-                  <div className="inline-flex items-center gap-2 bg-foreground/10 dark:bg-foreground/20 px-3 py-1 rounded-full mb-3">
-                    <span className="text-2xl font-black">1,000</span>
-                    <span className="text-sm font-semibold text-muted-foreground">copies total</span>
-                  </div>
-                  <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-                    <p className="font-semibold text-foreground">First 100 pre-orders guaranteed</p>
-                    <p>Then 900 copies available</p>
-                  </div>
-                </div>
-
-                {/* Included Cards - Fan Layout */}
-                <div className="relative mb-6 flex justify-center items-center h-32">
-                  <div className="relative w-24 h-32 transition-all duration-300 hover:scale-110 hover:z-10 hover:rotate-6" style={{ transform: "rotate(-8deg)" }}>
-                    <img
-                      src="/cards-cover/Front1000.png"
-                      alt="White Front Card"
-                      className="w-full h-full object-cover rounded-sm shadow-xl border-2 border-foreground/20"
-                    />
-                  </div>
-                  <div className="relative w-24 h-32 -ml-4 transition-all duration-300 hover:scale-110 hover:z-10 hover:-rotate-6" style={{ transform: "rotate(8deg)" }}>
-                    <img
-                      src="/cards-cover/Back1000.png"
-                      alt="White Back Card"
-                      className="w-full h-full object-cover rounded-sm shadow-xl border-2 border-foreground/20"
-                    />
-                  </div>
-                </div>
-                
-                <p className="text-xs text-center text-muted-foreground leading-relaxed">
-                  Includes matching white playing cards with every book
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="mt-8 text-center max-w-3xl mx-auto">

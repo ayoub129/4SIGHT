@@ -4,62 +4,15 @@ import { useEffect, useState } from "react"
 
 export function HeroSection() {
   const [isVisible, setIsVisible] = useState(false)
-  const [selectedFormat, setSelectedFormat] = useState<"ebook" | "paperback" | null>(null)
-  const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     setIsVisible(true)
   }, [])
 
   const handlePreorderClick = (format: "ebook" | "paperback") => {
-    setSelectedFormat(format)
-  }
-
-  const handlePreOrder = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!selectedFormat || !email) {
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      const price = selectedFormat === "ebook" ? "4.99" : "14.99"
-      const productName = selectedFormat === "ebook" ? "4SIGHT - Ebook" : "4SIGHT - Paper Book"
-
-      // Call Square Checkout API to get checkout URL
-      const response = await fetch("/api/square-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          format: selectedFormat,
-          price,
-          productName,
-          email,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create checkout")
-      }
-
-      // Redirect directly to Square checkout page
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl
-      } else {
-        throw new Error("No checkout URL received")
-      }
-    } catch (error) {
-      console.error("Checkout error:", error)
-      setIsLoading(false)
-      alert(error instanceof Error ? error.message : "An error occurred. Please try again.")
-    }
+    const price = format === "ebook" ? "4.99" : "14.99"
+    // Redirect immediately to checkout page
+    window.location.href = `/checkout?format=${format}&price=${price}`
   }
 
   return (
@@ -144,11 +97,7 @@ export function HeroSection() {
               <button
                 type="button"
                 onClick={() => handlePreorderClick("paperback")}
-                className={`flex-1 px-8 py-10 border-2 rounded-xl transition-all hover:scale-105 cursor-pointer ${
-                  selectedFormat === "paperback"
-                    ? "border-red-600 bg-red-50 dark:bg-red-950/20 shadow-lg"
-                    : "border-foreground/20 hover:border-foreground/40 bg-background/50"
-                }`}
+                className="flex-1 px-8 py-10 border-2 rounded-xl transition-all hover:scale-105 cursor-pointer border-foreground/20 hover:border-foreground/40 bg-background/50 hover:border-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
               >
                 <div className="text-2xl font-bold mb-2"> Paper Book</div>
                 <div className="text-lg font-semibold text-foreground">$14.99</div>
@@ -156,46 +105,16 @@ export function HeroSection() {
               <button
                 type="button"
                 onClick={() => handlePreorderClick("ebook")}
-                className={`flex-1 px-8 py-10 border-2 rounded-xl transition-all hover:scale-105 cursor-pointer ${
-                  selectedFormat === "ebook"
-                    ? "border-red-600 bg-red-50 dark:bg-red-950/20 shadow-lg"
-                    : "border-foreground/20 hover:border-foreground/40 bg-background/50"
-                }`}
+                className="flex-1 px-8 py-10 border-2 rounded-xl transition-all hover:scale-105 cursor-pointer border-foreground/20 hover:border-foreground/40 bg-background/50 hover:border-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
               >
                 <div className="text-2xl font-bold mb-2">Ebook</div>
                 <div className="text-lg font-semibold text-foreground">$4.99</div>
               </button>
             </div>
 
-            {/* Email form */}
-            <form onSubmit={handlePreOrder} className="flex flex-col items-center gap-5 max-w-lg mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-5 py-4 text-base border-2 border-foreground/20 rounded-xl bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-red-600 focus:ring-4 focus:ring-red-600/20 transition-all"
-                required
-                disabled={!selectedFormat || isLoading}
-              />
-              <button
-                type="submit"
-                disabled={!selectedFormat || !email || isLoading}
-                className="w-full px-8 py-4 bg-foreground text-background font-semibold text-base rounded-xl hover:opacity-90 hover:scale-105 cursor-pointer transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                {isLoading ? "Processing..." : "Pre Order Now"}
-              </button>
-              {!selectedFormat && (
-                <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                  Please select a format above
-                </p>
-              )}
-              {selectedFormat && (
-                <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                  Secure checkout powered by Square
-                </p>
-              )}
-            </form>
+            <p className="text-sm text-muted-foreground text-center leading-relaxed">
+              Click a format above to proceed to checkout. Email is optional and can be added separately.
+            </p>
           </div>
 
         </div>

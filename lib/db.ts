@@ -9,7 +9,7 @@ const pool = new Pool({
 export interface Order {
   id: number
   order_number: number
-  email: string
+  email: string | null
   format: string
   price: string
   product_name: string
@@ -26,7 +26,7 @@ export async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
         order_number INTEGER NOT NULL UNIQUE,
-        email TEXT NOT NULL,
+        email TEXT,
         format TEXT NOT NULL,
         price TEXT NOT NULL,
         product_name TEXT NOT NULL,
@@ -35,6 +35,15 @@ export async function initializeDatabase() {
         status TEXT DEFAULT 'pending'
       )
     `)
+    
+    // Alter existing table to make email nullable if it exists
+    try {
+      await pool.query(`
+        ALTER TABLE orders ALTER COLUMN email DROP NOT NULL
+      `)
+    } catch (error) {
+      // Column might already be nullable or table doesn't exist yet - ignore
+    }
 
     // Create admin_users table
     await pool.query(`
@@ -89,7 +98,7 @@ if (!initialized) {
 
 export async function saveOrder(order: {
   orderNumber: number
-  email: string
+  email?: string | null
   format: string
   price: string
   productName: string
@@ -102,7 +111,7 @@ export async function saveOrder(order: {
        RETURNING id`,
       [
         order.orderNumber,
-        order.email,
+        order.email || null,
         order.format,
         order.price,
         order.productName,

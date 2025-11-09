@@ -60,7 +60,7 @@ export function CameraFlash() {
             alt="Camera"
             className="w-full h-full object-contain"
             style={{
-              filter: "drop-shadow(0 0 20px rgba(255,255,255,0.3))",
+              filter: "drop-shadow(0 0 20px rgba(255,255,255,0.3)) brightness(0) invert(1)",
             }}
           />
         </div>

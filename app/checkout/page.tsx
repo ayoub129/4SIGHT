@@ -24,11 +24,6 @@ function CheckoutContent() {
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!email) {
-      setError("Please enter your email address")
-      return
-    }
 
     if (!format || !price) {
       setError("Missing product information")
@@ -39,7 +34,7 @@ function CheckoutContent() {
     setError(null)
 
     try {
-      // Call Square Checkout API
+      // Call Square Checkout API (email is optional)
       const response = await fetch("/api/square-checkout", {
         method: "POST",
         headers: {
@@ -49,7 +44,7 @@ function CheckoutContent() {
           format,
           price,
           productName,
-          email,
+          email: email || undefined, // Email is optional
         }),
       })
 
@@ -112,19 +107,18 @@ function CheckoutContent() {
         <form onSubmit={handleCheckout} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-2">
-              Email Address <span className="text-red-600">*</span>
+              Email Address <span className="text-muted-foreground text-xs">(Optional)</span>
             </label>
             <input
               id="email"
               type="email"
-              placeholder="your.email@example.com"
+              placeholder="your.email@example.com (optional)"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
               className="w-full px-5 py-4 text-base border-2 border-foreground/20 rounded-xl bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-red-600 focus:ring-4 focus:ring-red-600/20 transition-all"
             />
             <p className="text-xs text-muted-foreground mt-2">
-              We'll send your order confirmation to this email
+              We'll send your order confirmation to this email. You can add it later if you prefer.
             </p>
           </div>
 
