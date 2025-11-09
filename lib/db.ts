@@ -117,7 +117,7 @@ export async function saveOrder(order: {
   try {
     const result = await pool.query(
       `INSERT INTO orders (order_number, email, format, price, product_name, square_checkout_id, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+       VALUES ($1, $2, $3, $4, $5, $6, 'completed')
        RETURNING id`,
       [
         order.orderNumber,
@@ -131,6 +131,18 @@ export async function saveOrder(order: {
     return { lastInsertRowid: result.rows[0]?.id }
   } catch (error) {
     console.error("Error saving order:", error)
+    throw error
+  }
+}
+
+export async function clearAllOrders(): Promise<void> {
+  try {
+    await pool.query("DELETE FROM orders")
+    // Reset order counter to 26
+    await pool.query("UPDATE order_counter SET current_number = 26 WHERE id = 1")
+    console.log("All orders cleared and order counter reset")
+  } catch (error) {
+    console.error("Error clearing orders:", error)
     throw error
   }
 }
@@ -230,16 +242,5 @@ export async function getAllNewsletterSubscribers(): Promise<{ id: number; email
   }
 }
 
-export async function updateOrderWithCustomerEmail(squareCheckoutId: string, email: string): Promise<void> {
-  try {
-    await pool.query(
-      `UPDATE orders 
-       SET email = $1, status = 'completed' 
-       WHERE square_checkout_id = $2`,
-      [email, squareCheckoutId]
-    )
-  } catch (error) {
-    console.error("Error updating order with customer email:", error)
-    throw error
-  }
-}
+// Export getNextOrderNumber from order-number module
+export { getNextOrderNumber } from "@/lib/order-number"

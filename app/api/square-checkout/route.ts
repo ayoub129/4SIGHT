@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getNextOrderNumber } from "@/lib/order-number"
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,16 +37,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the next sequential order number (starts from 27)
-    let orderNumber: number
-    try {
-      orderNumber = await getNextOrderNumber()
-    } catch (dbError) {
-      console.error("Error getting order number:", dbError)
-      // Continue with a fallback order number
-      orderNumber = Math.floor(Date.now() / 1000) % 1000000 + 27
-    }
-
     // Square API base URL
     const squareApiUrl =
       SQUARE_ENVIRONMENT === "production"
@@ -55,6 +44,9 @@ export async function POST(request: NextRequest) {
         : "https://connect.squareupsandbox.com"
 
     // Create payment link request using Square's Payment Links API
+    // Store order details in note field so we can retrieve them in webhook
+    const orderMetadata = JSON.stringify({ format, price, productName })
+    
     const paymentLinkRequest = {
       idempotency_key: `${format}-${Date.now()}-${Math.random()}`,
       quick_pay: {
@@ -64,6 +56,7 @@ export async function POST(request: NextRequest) {
           currency: "USD",
         },
         location_id: SQUARE_LOCATION_ID,
+        note: orderMetadata, // Store order details for webhook
       },
       checkout_options: {
         ask_for_shipping_address: format === "paperback",
@@ -74,7 +67,7 @@ export async function POST(request: NextRequest) {
           cash_app_pay: true,
           afterpay_clearpay: true,
         },
-        redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/success?orderNumber=${orderNumber}`,
+        redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/success`,
       },
     }
 
@@ -101,27 +94,11 @@ export async function POST(request: NextRequest) {
 
     const checkoutId = data.payment_link?.id
 
-    // Save order to database (email will be captured from Square webhook)
-    try {
-      const { saveOrder } = await import("@/lib/db")
-      await saveOrder({
-        orderNumber,
-        email: null, // Will be updated from Square webhook
-        format,
-        price,
-        productName,
-        squareCheckoutId: checkoutId,
-      })
-    } catch (dbError) {
-      console.error("Error saving order to database:", dbError)
-      // Continue even if database save fails
-    }
-
-    // Return payment link URL and order number
+    // Don't save order yet - will be saved after payment completion via webhook
+    // Return payment link URL
     return NextResponse.json({
       checkoutUrl: data.payment_link?.url,
       checkoutId,
-      orderNumber,
     })
   } catch (error) {
     console.error("Checkout error:", error)

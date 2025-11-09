@@ -1,38 +1,10 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState, Suspense } from "react"
+import { useRouter } from "next/navigation"
+import { Suspense } from "react"
 
 function CheckoutSuccessContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const [number, setNumber] = useState(27)
-  const [isAnimating, setIsAnimating] = useState(true)
-
-  useEffect(() => {
-    // Get order number from URL parameter
-    const orderNumberParam = searchParams.get("orderNumber")
-    const targetNumber = orderNumberParam ? parseInt(orderNumberParam, 10) : 27
-
-    // Animate number from 27 to the actual order number
-    const duration = 2000 // 2 seconds
-    const steps = 30
-    const increment = (targetNumber - 27) / steps
-    let currentStep = 0
-
-    const interval = setInterval(() => {
-      currentStep++
-      if (currentStep <= steps) {
-        setNumber(Math.floor(27 + increment * currentStep))
-      } else {
-        setNumber(targetNumber)
-        setIsAnimating(false)
-        clearInterval(interval)
-      }
-    }, duration / steps)
-
-    return () => clearInterval(interval)
-  }, [searchParams])
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-background">
@@ -57,25 +29,13 @@ function CheckoutSuccessContent() {
         {/* Success Message */}
         <div className="space-y-4">
           <h1 className="text-4xl font-black text-red-600">4SIGHT</h1>
-          <h2 className="text-2xl font-bold">Congratulations!</h2>
+          <h2 className="text-2xl font-bold">Payment Successful!</h2>
           <p className="text-muted-foreground">
-            Your order has been successfully processed.
+            Thank you for your purchase. Your order has been successfully processed.
           </p>
           
-          {/* Number Dial */}
-          <div className="py-8">
-            <div className="inline-block">
-              <div className="text-6xl md:text-7xl font-black text-red-600 mb-2 transition-all duration-300">
-                #{number}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {isAnimating ? "Calculating your order number..." : "Your order number"}
-              </p>
-            </div>
-          </div>
-
-          <p className="text-sm text-muted-foreground">
-            You will receive a confirmation email shortly with your order details.
+          <p className="text-sm text-muted-foreground mt-4">
+            You will receive a confirmation email shortly with your order details and order number.
           </p>
         </div>
 

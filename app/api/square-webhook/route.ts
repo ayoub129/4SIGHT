@@ -49,36 +49,96 @@ export async function POST(request: NextRequest) {
     if (data.type && data.data?.object) {
       const payment = data.data.object
       
+      // Only process completed payments
+      const paymentStatus = payment?.status
+      if (paymentStatus !== "COMPLETED") {
+        console.log(`Payment ${payment?.id} status: ${paymentStatus}, skipping order creation`)
+        return NextResponse.json({ received: true })
+      }
+      
       // Extract customer information from Square payment
       const customerEmail = payment?.buyer_email_address || 
                            payment?.customer_email_address ||
-                           payment?.billing_address?.address_line_1 // Sometimes email is in billing
+                           payment?.billing_address?.email_address
       
-      const customerName = payment?.buyer_email_address ? 
-        payment?.buyer_email_address.split("@")[0] : 
-        payment?.customer_id || "Customer"
-      
-      const squareCheckoutId = payment?.id || payment?.order_id
+      const squarePaymentId = payment?.id
+      const squareOrderId = payment?.order_id
       const amount = payment?.amount_money?.amount
       const currency = payment?.amount_money?.currency || "USD"
       
-      // Update order in database with customer email
-      if (squareCheckoutId && customerEmail) {
+      // Get payment link details to retrieve order metadata (format, price, productName)
+      // We need to fetch the payment link to get the note/metadata
+      const SQUARE_ACCESS_TOKEN = process.env.SQUARE_ACCESS_TOKEN
+      const SQUARE_ENVIRONMENT = process.env.SQUARE_ENVIRONMENT || "sandbox"
+      const squareApiUrl = SQUARE_ENVIRONMENT === "production"
+        ? "https://connect.squareup.com"
+        : "https://connect.squareupsandbox.com"
+      
+      let orderDetails = { format: "unknown", price: "0", productName: "4SIGHT" }
+      
+      // Try to get order details from payment link
+      if (squareOrderId) {
         try {
-          const { updateOrderWithCustomerEmail } = await import("@/lib/db")
-          await updateOrderWithCustomerEmail(squareCheckoutId, customerEmail)
-          console.log(`Updated order ${squareCheckoutId} with email: ${customerEmail}`)
+          // Fetch order details from Square
+          const orderResponse = await fetch(`${squareApiUrl}/v2/orders/${squareOrderId}`, {
+            headers: {
+              "Square-Version": "2024-01-18",
+              "Authorization": `Bearer ${SQUARE_ACCESS_TOKEN}`,
+            },
+          })
+          
+          if (orderResponse.ok) {
+            const orderData = await orderResponse.json()
+            const lineItems = orderData.order?.line_items || []
+            if (lineItems.length > 0) {
+              const item = lineItems[0]
+              const itemName = item.name || ""
+              
+              // Parse format from product name
+              if (itemName.includes("Ebook") || itemName.includes("ebook")) {
+                orderDetails.format = "ebook"
+                orderDetails.price = "4.99"
+              } else if (itemName.includes("Paper") || itemName.includes("paperback")) {
+                orderDetails.format = "paperback"
+                orderDetails.price = "14.99"
+              }
+              orderDetails.productName = itemName
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching order details from Square:", error)
+        }
+      }
+      
+      // Create order in database only after payment is completed
+      if (customerEmail && amount) {
+        try {
+          const { saveOrder, getNextOrderNumber } = await import("@/lib/db")
+          const orderNumber = await getNextOrderNumber()
+          
+          await saveOrder({
+            orderNumber,
+            email: customerEmail,
+            format: orderDetails.format,
+            price: orderDetails.price,
+            productName: orderDetails.productName,
+            squareCheckoutId: squarePaymentId || squareOrderId || null,
+          })
+          
+          console.log(`Created order #${orderNumber} for ${customerEmail} after payment completion`)
         } catch (dbError) {
-          console.error("Error updating order with customer email:", dbError)
+          console.error("Error creating order after payment:", dbError)
         }
       }
 
-      console.log("Square webhook received:", {
+      console.log("Square webhook received - payment completed:", {
         type: data.type,
-        paymentId: squareCheckoutId,
+        paymentId: squarePaymentId,
+        orderId: squareOrderId,
         customerEmail,
         amount: amount ? (amount / 100).toFixed(2) : "N/A",
         currency,
+        format: orderDetails.format,
       })
     }
 
