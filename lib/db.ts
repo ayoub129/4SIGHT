@@ -157,6 +157,19 @@ export async function getAllOrders(): Promise<Order[]> {
   }
 }
 
+export async function getOrderBySquareCheckoutId(squareCheckoutId: string): Promise<Order | null> {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM orders WHERE square_checkout_id = $1 ORDER BY created_at DESC LIMIT 1",
+      [squareCheckoutId]
+    )
+    return result.rows.length > 0 ? (result.rows[0] as Order) : null
+  } catch (error) {
+    console.error("Error fetching order by Square checkout ID:", error)
+    throw error
+  }
+}
+
 export interface OrderWithNewsletter extends Order {
   is_newsletter_subscriber: boolean
   newsletter_subscribed_at: string | null
