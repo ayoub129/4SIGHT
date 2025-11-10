@@ -6,71 +6,96 @@ import { Suspense, useEffect, useState } from "react"
 function CheckoutSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [orderNumber, setOrderNumber] = useState<number | null>(null)
+  const [orderNumber, setOrderNumber] = useState<number>(27)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnimating, setIsAnimating] = useState(true)
   const maxPolls = 30 // Poll for up to 30 seconds
 
   useEffect(() => {
-    // Try to get payment ID from URL or check for any order created in last minute
-    // Since Square redirects don't always include the payment ID, we'll poll for the most recent order
-    let interval: NodeJS.Timeout | null = null
-    let numberInterval: NodeJS.Timeout | null = null
-    let attempts = 0
+    // Get order number from URL parameter or poll for most recent order
+    const orderNumberParam = searchParams.get("orderNumber")
     
-    const pollForOrder = async () => {
-      interval = setInterval(async () => {
-        attempts++
-        
-        try {
-          // Try to get the most recent order (likely this customer's order)
-          const response = await fetch(`/api/order-by-payment?paymentId=recent`)
-          const data = await response.json()
-          
-          if (data.order && data.order.order_number) {
-            const targetNumber = data.order.order_number
-            
-            // Animate number from 26 to the actual order number
-            const duration = 2000 // 2 seconds
-            const steps = 30
-            const increment = (targetNumber - 26) / steps
-            let currentStep = 0
-            
-            numberInterval = setInterval(() => {
-              currentStep++
-              if (currentStep <= steps) {
-                setOrderNumber(Math.floor(26 + increment * currentStep))
-              } else {
-                setOrderNumber(targetNumber)
-                setIsAnimating(false)
-                if (numberInterval) clearInterval(numberInterval)
-              }
-            }, duration / steps)
-            
-            setIsLoading(false)
-            if (interval) clearInterval(interval)
-          } else if (attempts >= maxPolls) {
-            // Stop polling after max attempts
-            setIsLoading(false)
-            if (interval) clearInterval(interval)
-          }
-        } catch (error) {
-          console.error("Error polling for order:", error)
-          if (attempts >= maxPolls) {
-            setIsLoading(false)
-            if (interval) clearInterval(interval)
-          }
+    if (orderNumberParam) {
+      // If order number is in URL, use it directly
+      const targetNumber = parseInt(orderNumberParam, 10)
+      
+      // Animate number from 26 to the actual order number
+      const duration = 2000 // 2 seconds
+      const steps = 30
+      const increment = (targetNumber - 26) / steps
+      let currentStep = 0
+      
+      const numberInterval = setInterval(() => {
+        currentStep++
+        if (currentStep <= steps) {
+          setOrderNumber(Math.floor(26 + increment * currentStep))
+        } else {
+          setOrderNumber(targetNumber)
+          setIsAnimating(false)
+          setIsLoading(false)
+          clearInterval(numberInterval)
         }
-      }, 1000) // Poll every 1 second
-    }
+      }, duration / steps)
+      
+      return () => clearInterval(numberInterval)
+    } else {
+      // Poll for the most recent order (created via webhook)
+      let interval: NodeJS.Timeout | null = null
+      let numberInterval: NodeJS.Timeout | null = null
+      let attempts = 0
+      
+      const pollForOrder = async () => {
+        interval = setInterval(async () => {
+          attempts++
+          
+          try {
+            const response = await fetch(`/api/order-by-payment?paymentId=recent`)
+            const data = await response.json()
+            
+            if (data.order && data.order.order_number) {
+              const targetNumber = data.order.order_number
+              
+              // Animate number from 26 to the actual order number
+              const duration = 2000 // 2 seconds
+              const steps = 30
+              const increment = (targetNumber - 26) / steps
+              let currentStep = 0
+              
+              numberInterval = setInterval(() => {
+                currentStep++
+                if (currentStep <= steps) {
+                  setOrderNumber(Math.floor(26 + increment * currentStep))
+                } else {
+                  setOrderNumber(targetNumber)
+                  setIsAnimating(false)
+                  if (numberInterval) clearInterval(numberInterval)
+                }
+              }, duration / steps)
+              
+              setIsLoading(false)
+              if (interval) clearInterval(interval)
+            } else if (attempts >= maxPolls) {
+              setIsLoading(false)
+              if (interval) clearInterval(interval)
+            }
+          } catch (error) {
+            console.error("Error polling for order:", error)
+            if (attempts >= maxPolls) {
+              setIsLoading(false)
+              if (interval) clearInterval(interval)
+            }
+          }
+        }, 1000) // Poll every 1 second
+      }
 
-    pollForOrder()
+      pollForOrder()
 
-    return () => {
-      if (interval) clearInterval(interval)
-      if (numberInterval) clearInterval(numberInterval)
+      return () => {
+        if (interval) clearInterval(interval)
+        if (numberInterval) clearInterval(numberInterval)
+      }
     }
-  }, [])
+  }, [searchParams])
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-background">
@@ -100,33 +125,16 @@ function CheckoutSuccessContent() {
             Your order has been successfully processed.
           </p>
           
-          {/* Order Number Display */}
+          {/* Number Dial */}
           <div className="py-8">
-            {isLoading ? (
-              <div className="space-y-2">
-                <div className="text-6xl md:text-7xl font-black text-red-600 mb-2">
-                  ...
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {isAnimating ? "Calculating your order number..." : "Processing..."}
-                </p>
+            <div className="inline-block">
+              <div className="text-6xl md:text-7xl font-black text-red-600 mb-2 transition-all duration-300">
+                #{orderNumber}
               </div>
-            ) : orderNumber ? (
-              <div className="space-y-2">
-                <div className="text-6xl md:text-7xl font-black text-red-600 mb-2 transition-all duration-300">
-                  #{orderNumber}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {orderNumber === 27 ? "You are the first to pre-order!" : `You are order #${orderNumber} to pre-order this book!`}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Your order number will be sent to your email shortly.
-                </p>
-              </div>
-            )}
+              <p className="text-sm text-muted-foreground">
+                {isAnimating ? "Calculating your order number..." : "Your order number"}
+              </p>
+            </div>
           </div>
 
           <p className="text-sm text-muted-foreground mt-4">
