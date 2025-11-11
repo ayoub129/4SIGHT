@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 interface Order {
@@ -17,7 +17,7 @@ interface Order {
   newsletter_subscribed_at?: string | null
 }
 
-export default function AdminOrdersPage() {
+function OrdersContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [orders, setOrders] = useState<Order[]>([])
@@ -187,6 +187,18 @@ export default function AdminOrdersPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
   )
 }
 

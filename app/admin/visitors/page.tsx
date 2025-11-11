@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 interface VisitorIP {
@@ -13,7 +13,7 @@ interface VisitorIP {
   last_visit: string
 }
 
-export default function AdminVisitorsPage() {
+function VisitorsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [visitors, setVisitors] = useState<VisitorIP[]>([])
@@ -178,6 +178,18 @@ export default function AdminVisitorsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminVisitorsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    }>
+      <VisitorsContent />
+    </Suspense>
   )
 }
 

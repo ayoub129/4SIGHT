@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 interface NewsletterSubscriber {
@@ -10,7 +10,7 @@ interface NewsletterSubscriber {
   subscribed: boolean
 }
 
-export default function AdminNewsletterPage() {
+function NewsletterContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([])
@@ -173,6 +173,18 @@ export default function AdminNewsletterPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminNewsletterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    }>
+      <NewsletterContent />
+    </Suspense>
   )
 }
 
