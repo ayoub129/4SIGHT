@@ -21,6 +21,28 @@ function CheckoutContent() {
     }
   }, [format, price, router])
 
+  // Track visitor IP address
+  useEffect(() => {
+    const trackVisit = async () => {
+      try {
+        await fetch("/api/track-visit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            path: window.location.pathname + window.location.search,
+          }),
+        })
+      } catch (error) {
+        // Silently fail - tracking shouldn't break the site
+        console.error("Failed to track visit:", error)
+      }
+    }
+    
+    trackVisit()
+  }, [])
+
   const handleCheckout = async () => {
     if (!format || !price) {
       setError("Missing product information")

@@ -113,9 +113,22 @@ export async function POST(request: NextRequest) {
       // Create order in database only after payment is completed
       if (customerEmail && amount) {
         try {
-          const { saveOrder, getNextOrderNumber } = await import("@/lib/db")
-          const orderNumber = await getNextOrderNumber()
+          console.log("[WEBHOOK] Starting order creation process:", {
+            customerEmail,
+            amount,
+            format: orderDetails.format,
+            price: orderDetails.price,
+            squarePaymentId,
+            squareOrderId
+          })
           
+          const { saveOrder, getNextOrderNumber } = await import("@/lib/db")
+          
+          console.log("[WEBHOOK] Calling getNextOrderNumber()...")
+          const orderNumber = await getNextOrderNumber()
+          console.log("[WEBHOOK] Received order number:", orderNumber)
+          
+          console.log("[WEBHOOK] Calling saveOrder() with order number:", orderNumber)
           await saveOrder({
             orderNumber,
             email: customerEmail,
@@ -125,10 +138,22 @@ export async function POST(request: NextRequest) {
             squareCheckoutId: squarePaymentId || squareOrderId || null,
           })
           
-          console.log(`Created order #${orderNumber} for ${customerEmail} after payment completion`)
+          console.log("[WEBHOOK] Successfully created order #" + orderNumber + " for " + customerEmail + " after payment completion")
         } catch (dbError) {
-          console.error("Error creating order after payment:", dbError)
+          console.error("[WEBHOOK] Error creating order after payment:", {
+            error: dbError instanceof Error ? dbError.message : String(dbError),
+            stack: dbError instanceof Error ? dbError.stack : undefined,
+            customerEmail,
+            amount
+          })
         }
+      } else {
+        console.log("[WEBHOOK] Skipping order creation - missing required data:", {
+          hasEmail: !!customerEmail,
+          hasAmount: !!amount,
+          customerEmail,
+          amount
+        })
       }
 
       console.log("Square webhook received - payment completed:", {

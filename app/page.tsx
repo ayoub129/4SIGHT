@@ -20,6 +20,28 @@ export default function Home() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Track visitor IP address
+  useEffect(() => {
+    const trackVisit = async () => {
+      try {
+        await fetch("/api/track-visit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            path: window.location.pathname,
+          }),
+        })
+      } catch (error) {
+        // Silently fail - tracking shouldn't break the site
+        console.error("Failed to track visit:", error)
+      }
+    }
+    
+    trackVisit()
+  }, [])
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
       {/* Falling cards background */}

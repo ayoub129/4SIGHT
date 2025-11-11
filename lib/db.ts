@@ -73,6 +73,37 @@ export async function initializeDatabase() {
       )
     `)
 
+    // Create visitor_ips table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS visitor_ips (
+        id SERIAL PRIMARY KEY,
+        ip_address TEXT NOT NULL,
+        user_agent TEXT,
+        path TEXT,
+        referer TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_visit TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // Create index on ip_address for faster queries
+    try {
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_visitor_ips_ip_address ON visitor_ips(ip_address)
+      `)
+    } catch (error) {
+      // Index might already exist - ignore
+    }
+
+    // Create index on created_at for faster date queries
+    try {
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_visitor_ips_created_at ON visitor_ips(created_at)
+      `)
+    } catch (error) {
+      // Index might already exist - ignore
+    }
+
     // Insert default admin if not exists
     const adminCheck = await pool.query(
       "SELECT id FROM admin_users WHERE email = $1",
@@ -90,8 +121,15 @@ export async function initializeDatabase() {
 
     // Initialize order counter if not exists
     const counterCheck = await pool.query("SELECT current_number FROM order_counter WHERE id = 1")
+    console.log("[DB-INIT] Order counter check:", {
+      exists: counterCheck.rows.length > 0,
+      currentValue: counterCheck.rows[0]?.current_number
+    })
     if (counterCheck.rows.length === 0) {
       await pool.query("INSERT INTO order_counter (id, current_number) VALUES (1, 26)")
+      console.log("[DB-INIT] Initialized order counter with value 26")
+    } else {
+      console.log("[DB-INIT] Order counter already initialized with value:", counterCheck.rows[0].current_number)
     }
   } catch (error) {
     console.error("Error initializing database:", error)
@@ -114,11 +152,34 @@ export async function saveOrder(order: {
   productName: string
   squareCheckoutId?: string
 }) {
+  const startTime = Date.now()
+  console.log("[SAVE-ORDER] saveOrder() called at", new Date().toISOString(), {
+    orderNumber: order.orderNumber,
+    email: order.email,
+    format: order.format,
+    price: order.price,
+    productName: order.productName,
+    squareCheckoutId: order.squareCheckoutId
+  })
+  
   try {
+    // Check if order number already exists
+    const existingCheck = await pool.query(
+      "SELECT id, order_number FROM orders WHERE order_number = $1",
+      [order.orderNumber]
+    )
+    
+    if (existingCheck.rows.length > 0) {
+      console.warn("[SAVE-ORDER] WARNING: Order number already exists!", {
+        orderNumber: order.orderNumber,
+        existingOrderId: existingCheck.rows[0].id
+      })
+    }
+    
     const result = await pool.query(
       `INSERT INTO orders (order_number, email, format, price, product_name, square_checkout_id, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'completed')
-       RETURNING id`,
+       RETURNING id, order_number, created_at`,
       [
         order.orderNumber,
         order.email || null,
@@ -128,9 +189,27 @@ export async function saveOrder(order: {
         order.squareCheckoutId || null,
       ]
     )
-    return { lastInsertRowid: result.rows[0]?.id }
+    
+    const savedOrder = result.rows[0]
+    const duration = Date.now() - startTime
+    
+    console.log("[SAVE-ORDER] Order saved successfully:", {
+      orderId: savedOrder.id,
+      orderNumber: savedOrder.order_number,
+      email: order.email,
+      createdAt: savedOrder.created_at,
+      duration: `${duration}ms`
+    })
+    
+    return { lastInsertRowid: savedOrder.id }
   } catch (error) {
-    console.error("Error saving order:", error)
+    const duration = Date.now() - startTime
+    console.error("[SAVE-ORDER] Error saving order:", {
+      orderNumber: order.orderNumber,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      duration: `${duration}ms`
+    })
     throw error
   }
 }
@@ -251,6 +330,60 @@ export async function getAllNewsletterSubscribers(): Promise<{ id: number; email
     return result.rows
   } catch (error) {
     console.error("Error fetching newsletter subscribers:", error)
+    throw error
+  }
+}
+
+export interface VisitorIP {
+  id: number
+  ip_address: string
+  user_agent: string | null
+  path: string | null
+  referer: string | null
+  created_at: string
+  last_visit: string
+}
+
+export async function trackVisitorIP(
+  ipAddress: string,
+  userAgent?: string | null,
+  path?: string | null,
+  referer?: string | null
+): Promise<void> {
+  try {
+    // Check if IP already exists
+    const existing = await pool.query(
+      "SELECT id, last_visit FROM visitor_ips WHERE ip_address = $1",
+      [ipAddress]
+    )
+
+    if (existing.rows.length > 0) {
+      // Update last visit time
+      await pool.query(
+        "UPDATE visitor_ips SET last_visit = CURRENT_TIMESTAMP, user_agent = COALESCE($1, user_agent), path = COALESCE($2, path), referer = COALESCE($3, referer) WHERE ip_address = $4",
+        [userAgent || null, path || null, referer || null, ipAddress]
+      )
+    } else {
+      // Insert new visitor
+      await pool.query(
+        "INSERT INTO visitor_ips (ip_address, user_agent, path, referer) VALUES ($1, $2, $3, $4)",
+        [ipAddress, userAgent || null, path || null, referer || null]
+      )
+    }
+  } catch (error) {
+    console.error("Error tracking visitor IP:", error)
+    // Don't throw - tracking shouldn't break the app
+  }
+}
+
+export async function getAllVisitorIPs(): Promise<VisitorIP[]> {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM visitor_ips ORDER BY last_visit DESC"
+    )
+    return result.rows as VisitorIP[]
+  } catch (error) {
+    console.error("Error fetching visitor IPs:", error)
     throw error
   }
 }

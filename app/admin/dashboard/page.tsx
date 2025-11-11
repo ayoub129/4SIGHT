@@ -17,14 +17,35 @@ interface Order {
   newsletter_subscribed_at?: string | null
 }
 
+interface NewsletterSubscriber {
+  id: number
+  email: string
+  created_at: string
+  subscribed: boolean
+}
+
+interface VisitorIP {
+  id: number
+  ip_address: string
+  user_agent: string | null
+  path: string | null
+  referer: string | null
+  created_at: string
+  last_visit: string
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([])
+  const [visitors, setVisitors] = useState<VisitorIP[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 
   useEffect(() => {
     fetchOrders()
+    fetchSubscribers()
+    fetchVisitors()
   }, [])
 
   const fetchOrders = async () => {
@@ -45,6 +66,44 @@ export default function AdminDashboardPage() {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchSubscribers = async () => {
+    try {
+      const response = await fetch("/api/admin/newsletter")
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/admin/login")
+          return
+        }
+        throw new Error(data.error || "Failed to fetch subscribers")
+      }
+
+      setSubscribers(data.subscribers || [])
+    } catch (err) {
+      console.error("Error fetching subscribers:", err)
+    }
+  }
+
+  const fetchVisitors = async () => {
+    try {
+      const response = await fetch("/api/admin/visitors")
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/admin/login")
+          return
+        }
+        throw new Error(data.error || "Failed to fetch visitors")
+      }
+
+      setVisitors(data.visitors || [])
+    } catch (err) {
+      console.error("Error fetching visitors:", err)
     }
   }
 
@@ -131,6 +190,96 @@ export default function AdminDashboardPage() {
                       <td className="px-6 py-4">${order.price}</td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
                         {new Date(order.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Newsletter Subscribers Table */}
+        <div className="bg-card rounded-xl border-2 border-foreground/20 overflow-hidden mt-8">
+          <div className="p-6 border-b border-foreground/20">
+            <h2 className="text-2xl font-bold">Newsletter Subscribers ({subscribers.length})</h2>
+          </div>
+
+          {subscribers.length === 0 ? (
+            <div className="p-12 text-center">
+              <p className="text-muted-foreground">No newsletter subscribers yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Subscribed Date</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((subscriber) => (
+                    <tr key={subscriber.id} className="border-t border-foreground/10 hover:bg-muted/30">
+                      <td className="px-6 py-4">{subscriber.email}</td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {new Date(subscriber.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`text-xs px-2 py-0.5 rounded-full inline-block ${
+                          subscriber.subscribed 
+                            ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                            : "bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300"
+                        }`}>
+                          {subscriber.subscribed ? "✓ Subscribed" : "Unsubscribed"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Visitor IPs Table */}
+        <div className="bg-card rounded-xl border-2 border-foreground/20 overflow-hidden mt-8">
+          <div className="p-6 border-b border-foreground/20">
+            <h2 className="text-2xl font-bold">Visitor IP Addresses ({visitors.length})</h2>
+          </div>
+
+          {visitors.length === 0 ? (
+            <div className="p-12 text-center">
+              <p className="text-muted-foreground">No visitor IPs tracked yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">IP Address</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">First Visit</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Last Visit</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Path</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">User Agent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visitors.map((visitor) => (
+                    <tr key={visitor.id} className="border-t border-foreground/10 hover:bg-muted/30">
+                      <td className="px-6 py-4 font-mono text-sm">{visitor.ip_address}</td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {new Date(visitor.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {new Date(visitor.last_visit).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {visitor.path || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground max-w-xs truncate" title={visitor.user_agent || ""}>
+                        {visitor.user_agent || "-"}
                       </td>
                     </tr>
                   ))}
