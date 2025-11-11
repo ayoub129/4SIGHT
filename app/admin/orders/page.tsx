@@ -63,34 +63,6 @@ function OrdersContent() {
     router.push(`/admin/orders?page=${page}`)
   }
 
-  const handleClearOrders = async () => {
-    if (!confirm("Are you sure you want to clear ALL orders? This will reset the order counter to 26 and cannot be undone.")) {
-      return
-    }
-
-    try {
-      const response = await fetch("/api/admin/clear-orders", {
-        method: "POST",
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/admin/login")
-          return
-        }
-        throw new Error(data.error || "Failed to clear orders")
-      }
-
-      // Refresh the page to show empty state
-      router.refresh()
-      fetchOrders(1)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to clear orders")
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -135,16 +107,8 @@ function OrdersContent() {
 
         {/* Orders Table */}
         <div className="bg-card rounded-xl border-2 border-foreground/20 overflow-hidden">
-          <div className="p-6 border-b border-foreground/20 flex justify-between items-center">
+          <div className="p-6 border-b border-foreground/20">
             <h2 className="text-2xl font-bold">Orders ({pagination.total})</h2>
-            {pagination.total > 0 && (
-              <button
-                onClick={handleClearOrders}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all text-sm font-semibold"
-              >
-                Clear All Orders
-              </button>
-            )}
           </div>
 
           {orders.length === 0 ? (
