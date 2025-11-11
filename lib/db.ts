@@ -264,10 +264,14 @@ export interface OrderWithNewsletter extends Order {
   newsletter_subscribed_at: string | null
 }
 
-export async function getAllOrdersWithNewsletter(): Promise<OrderWithNewsletter[]> {
+export async function getAllOrdersWithNewsletter(limit?: number, offset?: number): Promise<{ orders: OrderWithNewsletter[]; total: number }> {
   try {
-    // Join orders with newsletter subscribers to show combined data
-    const result = await pool.query(`
+    // Get total count
+    const countResult = await pool.query("SELECT COUNT(*) as total FROM orders")
+    const total = parseInt(countResult.rows[0].total)
+    
+    // Build query with pagination
+    let query = `
       SELECT 
         o.*,
         CASE WHEN ns.email IS NOT NULL THEN true ELSE false END as is_newsletter_subscriber,
@@ -275,8 +279,16 @@ export async function getAllOrdersWithNewsletter(): Promise<OrderWithNewsletter[
       FROM orders o
       LEFT JOIN newsletter_subscribers ns ON LOWER(o.email) = LOWER(ns.email) AND ns.subscribed = true
       ORDER BY o.created_at DESC
-    `)
-    return result.rows as OrderWithNewsletter[]
+    `
+    
+    if (limit !== undefined && offset !== undefined) {
+      query += ` LIMIT $1 OFFSET $2`
+      const result = await pool.query(query, [limit, offset])
+      return { orders: result.rows as OrderWithNewsletter[], total }
+    } else {
+      const result = await pool.query(query)
+      return { orders: result.rows as OrderWithNewsletter[], total }
+    }
   } catch (error) {
     console.error("Error fetching orders with newsletter:", error)
     throw error
@@ -332,12 +344,22 @@ export async function subscribeToNewsletter(email: string): Promise<{ success: b
   }
 }
 
-export async function getAllNewsletterSubscribers(): Promise<{ id: number; email: string; created_at: string; subscribed: boolean }[]> {
+export async function getAllNewsletterSubscribers(limit?: number, offset?: number): Promise<{ subscribers: { id: number; email: string; created_at: string; subscribed: boolean }[]; total: number }> {
   try {
-    const result = await pool.query(
-      "SELECT * FROM newsletter_subscribers WHERE subscribed = TRUE ORDER BY created_at DESC"
-    )
-    return result.rows
+    // Get total count
+    const countResult = await pool.query("SELECT COUNT(*) as total FROM newsletter_subscribers WHERE subscribed = TRUE")
+    const total = parseInt(countResult.rows[0].total)
+    
+    let query = "SELECT * FROM newsletter_subscribers WHERE subscribed = TRUE ORDER BY created_at DESC"
+    
+    if (limit !== undefined && offset !== undefined) {
+      query += " LIMIT $1 OFFSET $2"
+      const result = await pool.query(query, [limit, offset])
+      return { subscribers: result.rows, total }
+    } else {
+      const result = await pool.query(query)
+      return { subscribers: result.rows, total }
+    }
   } catch (error) {
     console.error("Error fetching newsletter subscribers:", error)
     throw error
@@ -386,12 +408,22 @@ export async function trackVisitorIP(
   }
 }
 
-export async function getAllVisitorIPs(): Promise<VisitorIP[]> {
+export async function getAllVisitorIPs(limit?: number, offset?: number): Promise<{ visitors: VisitorIP[]; total: number }> {
   try {
-    const result = await pool.query(
-      "SELECT * FROM visitor_ips ORDER BY last_visit DESC"
-    )
-    return result.rows as VisitorIP[]
+    // Get total count
+    const countResult = await pool.query("SELECT COUNT(*) as total FROM visitor_ips")
+    const total = parseInt(countResult.rows[0].total)
+    
+    let query = "SELECT * FROM visitor_ips ORDER BY last_visit DESC"
+    
+    if (limit !== undefined && offset !== undefined) {
+      query += " LIMIT $1 OFFSET $2"
+      const result = await pool.query(query, [limit, offset])
+      return { visitors: result.rows as VisitorIP[], total }
+    } else {
+      const result = await pool.query(query)
+      return { visitors: result.rows as VisitorIP[], total }
+    }
   } catch (error) {
     console.error("Error fetching visitor IPs:", error)
     throw error

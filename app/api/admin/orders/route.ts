@@ -26,8 +26,23 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const orders = await getAllOrdersWithNewsletter()
-    return NextResponse.json({ orders })
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get("page") || "1", 10)
+    const limit = 25
+    const offset = (page - 1) * limit
+
+    const { orders, total } = await getAllOrdersWithNewsletter(limit, offset)
+    const totalPages = Math.ceil(total / limit)
+
+    return NextResponse.json({ 
+      orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+      }
+    })
   } catch (error) {
     console.error("Error fetching orders:", error)
     return NextResponse.json(

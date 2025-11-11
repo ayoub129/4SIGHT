@@ -3,107 +3,43 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
-interface Order {
-  id: number
-  order_number: number
-  email: string | null
-  format: string
-  price: string
-  product_name: string
-  square_checkout_id: string | null
-  created_at: string
-  status: string
-  is_newsletter_subscriber?: boolean
-  newsletter_subscribed_at?: string | null
-}
-
-interface NewsletterSubscriber {
-  id: number
-  email: string
-  created_at: string
-  subscribed: boolean
-}
-
-interface VisitorIP {
-  id: number
-  ip_address: string
-  user_agent: string | null
-  path: string | null
-  referer: string | null
-  created_at: string
-  last_visit: string
-}
-
 export default function AdminDashboardPage() {
   const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([])
-  const [visitors, setVisitors] = useState<VisitorIP[]>([])
+  const [ordersCount, setOrders] = useState<number>(0)
+  const [subscribersCount, setSubscribers] = useState<number>(0)
+  const [visitorsCount, setVisitors] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 
   useEffect(() => {
-    fetchOrders()
-    fetchSubscribers()
-    fetchVisitors()
+    fetchCounts()
   }, [])
 
-  const fetchOrders = async () => {
+  const fetchCounts = async () => {
     try {
-      const response = await fetch("/api/admin/orders")
-      const data = await response.json()
+      // Fetch just the counts for summary
+      const [ordersRes, subscribersRes, visitorsRes] = await Promise.all([
+        fetch("/api/admin/orders?page=1&limit=1"),
+        fetch("/api/admin/newsletter?page=1&limit=1"),
+        fetch("/api/admin/visitors?page=1&limit=1")
+      ])
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/admin/login")
-          return
-        }
-        throw new Error(data.error || "Failed to fetch orders")
+      if (ordersRes.status === 401 || subscribersRes.status === 401 || visitorsRes.status === 401) {
+        router.push("/admin/login")
+        return
       }
 
-      setOrders(data.orders || [])
+      const ordersData = await ordersRes.json()
+      const subscribersData = await subscribersRes.json()
+      const visitorsData = await visitorsRes.json()
+
+      setOrders(ordersData.pagination?.total || 0)
+      setSubscribers(subscribersData.pagination?.total || 0)
+      setVisitors(visitorsData.pagination?.total || 0)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const fetchSubscribers = async () => {
-    try {
-      const response = await fetch("/api/admin/newsletter")
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/admin/login")
-          return
-        }
-        throw new Error(data.error || "Failed to fetch subscribers")
-      }
-
-      setSubscribers(data.subscribers || [])
-    } catch (err) {
-      console.error("Error fetching subscribers:", err)
-    }
-  }
-
-  const fetchVisitors = async () => {
-    try {
-      const response = await fetch("/api/admin/visitors")
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/admin/login")
-          return
-        }
-        throw new Error(data.error || "Failed to fetch visitors")
-      }
-
-      setVisitors(data.visitors || [])
-    } catch (err) {
-      console.error("Error fetching visitors:", err)
     }
   }
 
@@ -150,159 +86,30 @@ export default function AdminDashboardPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-card rounded-xl border-2 border-foreground/20 p-6">
+          <button
+            onClick={() => router.push("/admin/orders")}
+            className="bg-card rounded-xl border-2 border-foreground/20 p-6 hover:border-foreground/40 transition-all cursor-pointer text-left"
+          >
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Orders</h3>
-            <p className="text-3xl font-black text-red-600">{orders.length}</p>
-          </div>
-          <div className="bg-card rounded-xl border-2 border-foreground/20 p-6">
+            <p className="text-3xl font-black text-red-600">{ordersCount}</p>
+            <p className="text-xs text-muted-foreground mt-2">Click to view all orders →</p>
+          </button>
+          <button
+            onClick={() => router.push("/admin/newsletter")}
+            className="bg-card rounded-xl border-2 border-foreground/20 p-6 hover:border-foreground/40 transition-all cursor-pointer text-left"
+          >
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">Newsletter Subscribers</h3>
-            <p className="text-3xl font-black text-red-600">{subscribers.length}</p>
-          </div>
-          <div className="bg-card rounded-xl border-2 border-foreground/20 p-6">
+            <p className="text-3xl font-black text-red-600">{subscribersCount}</p>
+            <p className="text-xs text-muted-foreground mt-2">Click to view all subscribers →</p>
+          </button>
+          <button
+            onClick={() => router.push("/admin/visitors")}
+            className="bg-card rounded-xl border-2 border-foreground/20 p-6 hover:border-foreground/40 transition-all cursor-pointer text-left"
+          >
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">Unique Visitors</h3>
-            <p className="text-3xl font-black text-red-600">{visitors.length}</p>
-          </div>
-        </div>
-
-        {/* Orders Table */}
-        <div className="bg-card rounded-xl border-2 border-foreground/20 overflow-hidden">
-          <div className="p-6 border-b border-foreground/20">
-            <h2 className="text-2xl font-bold">Orders ({orders.length})</h2>
-          </div>
-
-          {orders.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-muted-foreground">No orders yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Order #</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Email / Newsletter</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Format</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Price</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id} className="border-t border-foreground/10 hover:bg-muted/30">
-                      <td className="px-6 py-4 font-semibold">#{order.order_number}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          <span className={order.email ? "" : "text-muted-foreground italic"}>
-                            {order.email || "No email yet"}
-                          </span>
-                          {order.is_newsletter_subscriber && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 inline-block w-fit">
-                              ✓ Newsletter Subscriber
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 capitalize">{order.format}</td>
-                      <td className="px-6 py-4">${order.price}</td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Newsletter Subscribers Table */}
-        <div className="bg-card rounded-xl border-2 border-foreground/20 overflow-hidden mt-8">
-          <div className="p-6 border-b border-foreground/20">
-            <h2 className="text-2xl font-bold">Newsletter Subscribers ({subscribers.length})</h2>
-          </div>
-
-          {subscribers.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-muted-foreground">No newsletter subscribers yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Subscribed Date</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subscribers.map((subscriber) => (
-                    <tr key={subscriber.id} className="border-t border-foreground/10 hover:bg-muted/30">
-                      <td className="px-6 py-4">{subscriber.email}</td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {new Date(subscriber.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-xs px-2 py-0.5 rounded-full inline-block ${
-                          subscriber.subscribed 
-                            ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-                            : "bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300"
-                        }`}>
-                          {subscriber.subscribed ? "✓ Subscribed" : "Unsubscribed"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Visitor IPs Table */}
-        <div className="bg-card rounded-xl border-2 border-foreground/20 overflow-hidden mt-8">
-          <div className="p-6 border-b border-foreground/20">
-            <h2 className="text-2xl font-bold">Visitor IP Addresses ({visitors.length})</h2>
-          </div>
-
-          {visitors.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-muted-foreground">No visitor IPs tracked yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">IP Address</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">First Visit</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Last Visit</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Path</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">User Agent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visitors.map((visitor) => (
-                    <tr key={visitor.id} className="border-t border-foreground/10 hover:bg-muted/30">
-                      <td className="px-6 py-4 font-mono text-sm">{visitor.ip_address}</td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {new Date(visitor.created_at).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {new Date(visitor.last_visit).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {visitor.path || "-"}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-muted-foreground max-w-xs truncate" title={visitor.user_agent || ""}>
-                        {visitor.user_agent || "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+            <p className="text-3xl font-black text-red-600">{visitorsCount}</p>
+            <p className="text-xs text-muted-foreground mt-2">Click to view all visitors →</p>
+          </button>
         </div>
       </div>
     </div>

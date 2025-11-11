@@ -26,8 +26,23 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const visitors = await getAllVisitorIPs()
-    return NextResponse.json({ visitors })
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get("page") || "1", 10)
+    const limit = 25
+    const offset = (page - 1) * limit
+
+    const { visitors, total } = await getAllVisitorIPs(limit, offset)
+    const totalPages = Math.ceil(total / limit)
+
+    return NextResponse.json({ 
+      visitors,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+      }
+    })
   } catch (error) {
     console.error("Error fetching visitor IPs:", error)
     return NextResponse.json(

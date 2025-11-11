@@ -6,9 +6,9 @@ import { Suspense, useEffect, useState } from "react"
 function CheckoutSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [orderNumber, setOrderNumber] = useState<number>(27)
+  const [orderNumber, setOrderNumber] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isAnimating, setIsAnimating] = useState(true)
+  const [isAnimating, setIsAnimating] = useState(false)
   const maxPolls = 30 // Poll for up to 30 seconds
 
   useEffect(() => {
@@ -18,26 +18,9 @@ function CheckoutSuccessContent() {
     if (orderNumberParam) {
       // If order number is in URL, use it directly
       const targetNumber = parseInt(orderNumberParam, 10)
-      
-      // Animate number from 26 to the actual order number
-      const duration = 2000 // 2 seconds
-      const steps = 30
-      const increment = (targetNumber - 26) / steps
-      let currentStep = 0
-      
-      const numberInterval = setInterval(() => {
-        currentStep++
-        if (currentStep <= steps) {
-          setOrderNumber(Math.floor(26 + increment * currentStep))
-        } else {
-          setOrderNumber(targetNumber)
-          setIsAnimating(false)
-          setIsLoading(false)
-          clearInterval(numberInterval)
-        }
-      }, duration / steps)
-      
-      return () => clearInterval(numberInterval)
+      setOrderNumber(targetNumber)
+      setIsLoading(false)
+      setIsAnimating(false)
     } else {
       // Poll for the most recent order (created via webhook)
       let interval: NodeJS.Timeout | null = null
@@ -59,24 +42,10 @@ function CheckoutSuccessContent() {
               const targetNumber = data.order.order_number
               console.log("[SUCCESS-PAGE] Found order! Order number:", targetNumber)
               
-              // Animate number from 26 to the actual order number
-              const duration = 2000 // 2 seconds
-              const steps = 30
-              const increment = (targetNumber - 26) / steps
-              let currentStep = 0
-              
-              numberInterval = setInterval(() => {
-                currentStep++
-                if (currentStep <= steps) {
-                  setOrderNumber(Math.floor(26 + increment * currentStep))
-                } else {
-                  setOrderNumber(targetNumber)
-                  setIsAnimating(false)
-                  if (numberInterval) clearInterval(numberInterval)
-                }
-              }, duration / steps)
-              
+              // Stop polling and show number directly
+              setOrderNumber(targetNumber)
               setIsLoading(false)
+              setIsAnimating(false)
               if (interval) clearInterval(interval)
             } else {
               console.log("[SUCCESS-PAGE] No order found yet, order:", data.order)
@@ -137,12 +106,25 @@ function CheckoutSuccessContent() {
           {/* Number Dial */}
           <div className="py-8">
             <div className="inline-block">
-              <div className="text-6xl md:text-7xl font-black text-red-600 mb-2 transition-all duration-300">
-                #{orderNumber}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {isAnimating ? "Calculating your order number..." : "Your order number"}
-              </p>
+              {orderNumber !== null ? (
+                <>
+                  <div className="text-6xl md:text-7xl font-black text-red-600 mb-2 transition-all duration-300">
+                    #{orderNumber}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your order number
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="text-6xl md:text-7xl font-black text-red-600 mb-2 opacity-0">
+                    #0
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Calculating your order number...
+                  </p>
+                </>
+              )}
             </div>
           </div>
 

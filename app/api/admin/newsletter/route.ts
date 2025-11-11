@@ -26,8 +26,23 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const subscribers = await getAllNewsletterSubscribers()
-    return NextResponse.json({ subscribers })
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get("page") || "1", 10)
+    const limit = 25
+    const offset = (page - 1) * limit
+
+    const { subscribers, total } = await getAllNewsletterSubscribers(limit, offset)
+    const totalPages = Math.ceil(total / limit)
+
+    return NextResponse.json({ 
+      subscribers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+      }
+    })
   } catch (error) {
     console.error("Error fetching newsletter subscribers:", error)
     return NextResponse.json(
