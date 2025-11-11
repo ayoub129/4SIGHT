@@ -65,22 +65,27 @@ export async function POST(request: NextRequest) {
     // Try different possible structures
     let payment = null
     
-    // Structure 1: data.data.object (most common)
-    if (data.data?.object) {
+    // Structure 1: data.data.object.payment (nested payment object)
+    if (data.data?.object?.payment) {
+      payment = data.data.object.payment
+      console.log("[WEBHOOK] Found payment in data.data.object.payment")
+    }
+    // Structure 2: data.data.object (direct payment object)
+    else if (data.data?.object) {
       payment = data.data.object
       console.log("[WEBHOOK] Found payment in data.data.object")
     }
-    // Structure 2: data.object (alternative)
+    // Structure 3: data.object (alternative)
     else if (data.object) {
       payment = data.object
       console.log("[WEBHOOK] Found payment in data.object")
     }
-    // Structure 3: data itself might be the payment
+    // Structure 4: data itself might be the payment
     else if (data.id && data.status) {
       payment = data
       console.log("[WEBHOOK] Found payment as root data object")
     }
-    // Structure 4: Check if it's an array
+    // Structure 5: Check if it's an array
     else if (Array.isArray(data.data)) {
       payment = data.data[0]
       console.log("[WEBHOOK] Found payment in data array")
