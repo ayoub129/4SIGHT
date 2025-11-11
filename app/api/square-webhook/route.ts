@@ -23,6 +23,13 @@ export async function POST(request: NextRequest) {
     const signature = request.headers.get("x-square-signature")
     const webhookUrl = request.headers.get("x-square-webhook-url")
 
+    console.log("[WEBHOOK] Webhook received:", {
+      hasBody: !!body,
+      bodyLength: body.length,
+      hasSignature: !!signature,
+      webhookUrl
+    })
+
     // Verify webhook signature (recommended for production)
     // You'll need to set SQUARE_WEBHOOK_SECRET in your environment variables
     const webhookSecret = process.env.SQUARE_WEBHOOK_SECRET
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
         .digest("base64")
       
       if (hash !== signature) {
-        console.error("Invalid webhook signature")
+        console.error("[WEBHOOK] Invalid webhook signature")
         return NextResponse.json(
           { error: "Invalid signature" },
           { status: 401 }
@@ -42,6 +49,12 @@ export async function POST(request: NextRequest) {
     }
 
     const data = JSON.parse(body)
+    console.log("[WEBHOOK] Parsed webhook data:", {
+      type: data.type,
+      hasData: !!data.data,
+      hasObject: !!data.data?.object,
+      paymentId: data.data?.object?.id
+    })
     
     // Square webhook structure
     // data.type will be "payment.created" or "payment.updated"
@@ -59,12 +72,26 @@ export async function POST(request: NextRequest) {
       // Extract customer information from Square payment
       const customerEmail = payment?.buyer_email_address || 
                            payment?.customer_email_address ||
-                           payment?.billing_address?.email_address
+                           payment?.billing_address?.email_address ||
+                           payment?.email_address
       
       const squarePaymentId = payment?.id
       const squareOrderId = payment?.order_id
       const amount = payment?.amount_money?.amount
       const currency = payment?.amount_money?.currency || "USD"
+      
+      console.log("[WEBHOOK] Extracted payment data:", {
+        paymentId: squarePaymentId,
+        orderId: squareOrderId,
+        customerEmail,
+        amount,
+        currency,
+        paymentStatus: payment?.status,
+        paymentSource: payment?.source_type,
+        hasBuyerEmail: !!payment?.buyer_email_address,
+        hasCustomerEmail: !!payment?.customer_email_address,
+        hasBillingEmail: !!payment?.billing_address?.email_address
+      })
       
       // Get payment link details to retrieve order metadata (format, price, productName)
       // We need to fetch the payment link to get the note/metadata
@@ -111,10 +138,11 @@ export async function POST(request: NextRequest) {
       }
       
       // Create order in database only after payment is completed
-      if (customerEmail && amount) {
+      // Create order even if email is missing (we can update it later)
+      if (amount) {
         try {
           console.log("[WEBHOOK] Starting order creation process:", {
-            customerEmail,
+            customerEmail: customerEmail || "NO EMAIL",
             amount,
             format: orderDetails.format,
             price: orderDetails.price,
@@ -131,16 +159,16 @@ export async function POST(request: NextRequest) {
           console.log("[WEBHOOK] Calling saveOrder() with order number:", orderNumber)
           await saveOrder({
             orderNumber,
-            email: customerEmail,
+            email: customerEmail || null, // Allow null email
             format: orderDetails.format,
             price: orderDetails.price,
             productName: orderDetails.productName,
             squareCheckoutId: squarePaymentId || squareOrderId || null,
           })
           
-          console.log("[WEBHOOK] Successfully created order #" + orderNumber + " for " + customerEmail + " after payment completion")
+          console.log("[WEBHOOK] ✅ Successfully created order #" + orderNumber + (customerEmail ? " for " + customerEmail : " (no email)") + " after payment completion")
         } catch (dbError) {
-          console.error("[WEBHOOK] Error creating order after payment:", {
+          console.error("[WEBHOOK] ❌ Error creating order after payment:", {
             error: dbError instanceof Error ? dbError.message : String(dbError),
             stack: dbError instanceof Error ? dbError.stack : undefined,
             customerEmail,
@@ -148,11 +176,12 @@ export async function POST(request: NextRequest) {
           })
         }
       } else {
-        console.log("[WEBHOOK] Skipping order creation - missing required data:", {
+        console.log("[WEBHOOK] ⚠️ Skipping order creation - missing amount:", {
           hasEmail: !!customerEmail,
           hasAmount: !!amount,
           customerEmail,
-          amount
+          amount,
+          paymentId: squarePaymentId
         })
       }
 

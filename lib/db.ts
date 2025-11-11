@@ -228,10 +228,20 @@ export async function clearAllOrders(): Promise<void> {
 
 export async function getAllOrders(): Promise<Order[]> {
   try {
+    console.log("[GET-ALL-ORDERS] Fetching all orders...")
     const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC")
+    console.log("[GET-ALL-ORDERS] Query returned", result.rows.length, "orders")
+    if (result.rows.length > 0) {
+      console.log("[GET-ALL-ORDERS] First order:", {
+        id: result.rows[0].id,
+        order_number: result.rows[0].order_number,
+        created_at: result.rows[0].created_at,
+        email: result.rows[0].email
+      })
+    }
     return result.rows as Order[]
   } catch (error) {
-    console.error("Error fetching orders:", error)
+    console.error("[GET-ALL-ORDERS] Error fetching orders:", error)
     throw error
   }
 }

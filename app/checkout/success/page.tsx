@@ -45,15 +45,19 @@ function CheckoutSuccessContent() {
       let attempts = 0
       
       const pollForOrder = async () => {
+        console.log("[SUCCESS-PAGE] Starting to poll for recent order...")
         interval = setInterval(async () => {
           attempts++
+          console.log(`[SUCCESS-PAGE] Poll attempt ${attempts}/${maxPolls}`)
           
           try {
             const response = await fetch(`/api/order-by-payment?paymentId=recent`)
             const data = await response.json()
+            console.log("[SUCCESS-PAGE] Poll response:", data)
             
             if (data.order && data.order.order_number) {
               const targetNumber = data.order.order_number
+              console.log("[SUCCESS-PAGE] Found order! Order number:", targetNumber)
               
               // Animate number from 26 to the actual order number
               const duration = 2000 // 2 seconds
@@ -74,13 +78,18 @@ function CheckoutSuccessContent() {
               
               setIsLoading(false)
               if (interval) clearInterval(interval)
-            } else if (attempts >= maxPolls) {
-              setIsLoading(false)
-              if (interval) clearInterval(interval)
+            } else {
+              console.log("[SUCCESS-PAGE] No order found yet, order:", data.order)
+              if (attempts >= maxPolls) {
+                console.log("[SUCCESS-PAGE] Max polls reached, stopping")
+                setIsLoading(false)
+                if (interval) clearInterval(interval)
+              }
             }
           } catch (error) {
-            console.error("Error polling for order:", error)
+            console.error("[SUCCESS-PAGE] Error polling for order:", error)
             if (attempts >= maxPolls) {
+              console.log("[SUCCESS-PAGE] Max polls reached after error, stopping")
               setIsLoading(false)
               if (interval) clearInterval(interval)
             }

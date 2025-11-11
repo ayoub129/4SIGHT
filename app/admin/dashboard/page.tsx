@@ -148,6 +148,22 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-card rounded-xl border-2 border-foreground/20 p-6">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2">Total Orders</h3>
+            <p className="text-3xl font-black text-red-600">{orders.length}</p>
+          </div>
+          <div className="bg-card rounded-xl border-2 border-foreground/20 p-6">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2">Newsletter Subscribers</h3>
+            <p className="text-3xl font-black text-red-600">{subscribers.length}</p>
+          </div>
+          <div className="bg-card rounded-xl border-2 border-foreground/20 p-6">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2">Unique Visitors</h3>
+            <p className="text-3xl font-black text-red-600">{visitors.length}</p>
+          </div>
+        </div>
+
         {/* Orders Table */}
         <div className="bg-card rounded-xl border-2 border-foreground/20 overflow-hidden">
           <div className="p-6 border-b border-foreground/20">
